@@ -28,8 +28,8 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
     
-    // Format email
-    const fullEmail = email.toLowerCase().trim() + '@gmail.com';
+    // Format email - accept full email address
+    const fullEmail = email.toLowerCase().trim();
     
     // Find account
     const account = await db.findAccountByEmail(fullEmail);

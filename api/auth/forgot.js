@@ -28,8 +28,8 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email is required.' });
     }
     
-    // Format email
-    const fullEmail = userEmail.toLowerCase().trim() + '@gmail.com';
+    // Format email - accept full email address
+    const fullEmail = userEmail.toLowerCase().trim();
     
     // Always return success to not reveal if account exists
     const successMessage = 'If an account exists, a reset link has been sent.';

@@ -31,9 +31,14 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
     
-    // Format email
-    const fullEmail = email.toLowerCase().trim() + '@gmail.com';
+    // Format email - accept full email address
+    const fullEmail = email.toLowerCase().trim();
     console.log('Processing signup for:', fullEmail);
+    
+    // Validate email format
+    if (!auth.validateEmail(fullEmail)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
     
     // Validate password
     const passwordValidation = auth.validatePassword(password);
