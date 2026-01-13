@@ -55,10 +55,15 @@ module.exports = async (req, res) => {
 };
 
 async function handleUpload(req, res, decoded) {
-  const { fileName, fileData } = req.body;
+  const { fileName, fileData, country, address } = req.body;
   const userEmail = decoded.email;
   const sanitizedEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_');
   const folderPath = `/UserPhotos/${sanitizedEmail}`;
+  
+  // Validate country
+  if (!country) {
+    return res.status(400).json({ success: false, message: 'Please select a country.' });
+  }
   
   // Create folder
   try {
@@ -112,15 +117,23 @@ async function handleUpload(req, res, decoded) {
     }
   } catch (e) {}
   
-  // Create order
+  // Create order with country and address
   const supabase = db.getSupabase();
   const { data: order, error } = await supabase
     .from('orders')
-    .insert({ user_email: userEmail, status: 'pending', dropbox_folder: folderPath, dropbox_link: sharedLink })
+    .insert({
+      user_email: userEmail,
+      status: 'pending',
+      dropbox_folder: folderPath,
+      dropbox_link: sharedLink,
+      country: country,
+      address: address || null
+    })
     .select()
     .single();
   
   if (error) {
+    console.error('Order creation error:', error);
     return res.status(500).json({ success: false, message: 'Failed to create order.' });
   }
   
@@ -265,6 +278,6 @@ async function handleApprove(req, res) {
 
 function sendHtml(res, title, msg, success) {
   res.setHeader('Content-Type', 'text/html');
-  res.status(200).send(`<!DOCTYPE html><html><head><title>${title}</title><style>body{font-family:system-ui;background:#0f0f23;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.card{background:#1a1a2e;padding:40px;border-radius:16px;text-align:center;max-width:500px}h1{color:${success?'#10b981':'#ef4444'}}</style></head><body><div class="card"><h1>${title}</h1><p>${msg}</p></div></body></html>`);
+  res.status(200).send(`<!DOCTYPE html><html><head><title>${title}</title><style>body{font-family:system-ui;background:#f8fafc;color:#1e293b;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.card{background:#ffffff;padding:40px;border-radius:16px;text-align:center;max-width:500px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}h1{color:${success?'#059669':'#dc2626'}}a{color:#4f46e5}</style></head><body><div class="card"><h1>${title}</h1><p>${msg}</p></div></body></html>`);
 }
 

@@ -37,6 +37,10 @@ module.exports = async (req, res) => {
         return await handleGetCodes(req, res);
       case 'clear-all':
         return await handleClearAll(req, res);
+      case 'all-orders':
+        return await handleGetAllOrders(req, res);
+      case 'update-pickup':
+        return await handleUpdatePickup(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -125,5 +129,45 @@ async function handleClearAll(req, res) {
     success: true,
     message: `All data cleared! Deleted ${deletedFolders} folders.`,
   });
+}
+
+async function handleGetAllOrders(req, res) {
+  const supabase = db.getSupabase();
+  
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching orders:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch orders.' });
+  }
+  
+  return res.status(200).json({ success: true, orders: orders || [] });
+}
+
+async function handleUpdatePickup(req, res) {
+  const { orderId, pickupInstructions } = req.body;
+  
+  if (!orderId) {
+    return res.status(400).json({ success: false, message: 'Order ID is required.' });
+  }
+  
+  const supabase = db.getSupabase();
+  
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ pickup_instructions: pickupInstructions || null })
+    .eq('id', orderId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error updating pickup instructions:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update instructions.' });
+  }
+  
+  return res.status(200).json({ success: true, message: 'Instructions updated!', order: data });
 }
 
