@@ -274,8 +274,9 @@
         </div>
         
         <div class="form-group">
-          <label>Delivery Address <span class="optional">(Optional - for physical prints)</span></label>
-          <textarea id="address" placeholder="Enter your address for physical delivery (optional)"></textarea>
+          <label>Your Address <span class="optional">(Required)</span></label>
+          <textarea id="address" placeholder="Enter your address to find the nearest CVS/Walgreens photo locations" required oninput="validateUploadForm()"></textarea>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">We'll use this to locate the nearest CVS or Walgreens for photo printing.</p>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
@@ -457,9 +458,10 @@
     function validateUploadForm() {
       const country = document.getElementById('country').value;
       const otherCountry = document.getElementById('otherCountry').value;
+      const address = document.getElementById('address').value.trim();
       const file = document.getElementById('photoFile').files[0];
       
-      let valid = file && country;
+      let valid = file && country && address;
       if (country === 'Other' && !otherCountry.trim()) {
         valid = false;
       }
@@ -474,7 +476,10 @@
       const otherCountry = document.getElementById('otherCountry').value;
       const address = document.getElementById('address').value.trim();
       
-      if (!file || !country) return;
+      if (!file || !country || !address) {
+        showMessage('Please fill in all required fields.', 'error');
+        return;
+      }
       if (country === 'Other' && !otherCountry.trim()) {
         showMessage('Please specify your country.', 'error');
         return;
