@@ -436,10 +436,10 @@
     
     async function verifySession(token) {
       try {
-        const res = await fetch(API_BASE + '/api/auth/verify', {
+        const res = await fetch(API_BASE + '/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
+          body: JSON.stringify({ action: 'verify', token })
         });
         
         const data = await res.json();
@@ -480,10 +480,10 @@
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         
-        const res = await fetch(API_BASE + '/api/auth/login', {
+        const res = await fetch(API_BASE + '/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ action: 'login', email, password })
         });
         
         const data = await res.json();
@@ -518,10 +518,10 @@
         const email = document.getElementById('signupEmail').value.trim();
         const password = document.getElementById('signupPassword').value;
         
-        const res = await fetch(API_BASE + '/api/auth/signup', {
+        const res = await fetch(API_BASE + '/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ action: 'signup', email, password })
         });
         
         const data = await res.json();
@@ -549,10 +549,10 @@
       try {
         const email = document.getElementById('forgotEmail').value.trim();
         
-        const res = await fetch(API_BASE + '/api/auth/forgot', {
+        const res = await fetch(API_BASE + '/api/auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ action: 'forgot', email })
         });
         
         const data = await res.json();

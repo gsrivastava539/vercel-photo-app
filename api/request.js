@@ -71,6 +71,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Success! The digital photo link has been sent to your email.',
+      dropboxLink: downloadLink,
     });
     
   } catch (error) {

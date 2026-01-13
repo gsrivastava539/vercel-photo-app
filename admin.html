@@ -124,7 +124,7 @@
     };
     async function verifyAdmin(token) {
       try {
-        const res = await fetch(API_BASE + '/api/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+        const res = await fetch(API_BASE + '/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'verify', token }) });
         const data = await res.json();
         if (!data.valid || !data.isAdmin) { window.location.href = '/'; return; }
         loadCodes();
@@ -135,7 +135,7 @@
     async function generateCode() {
       const btn = document.getElementById('generateBtn'); btn.disabled = true; btn.textContent = 'Generating...';
       try {
-        const res = await fetch(API_BASE + '/api/admin/create-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: getToken() }) });
+        const res = await fetch(API_BASE + '/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create-code', token: getToken() }) });
         const data = await res.json();
         if (data.success) {
           document.getElementById('newCode').textContent = data.code;
@@ -150,7 +150,7 @@
     }
     async function loadCodes() {
       try {
-        const res = await fetch(API_BASE + '/api/admin/codes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: getToken() }) });
+        const res = await fetch(API_BASE + '/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'codes', token: getToken() }) });
         const data = await res.json();
         document.getElementById('codesLoading').style.display = 'none';
         if (data.success && data.codes.length > 0) {
@@ -170,7 +170,7 @@
       if (!confirm('This will delete all Dropbox folders. Continue?')) return;
       const btn = document.getElementById('clearBtn'); btn.disabled = true; btn.textContent = 'Deleting...';
       try {
-        const res = await fetch(API_BASE + '/api/admin/clear-all', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: getToken() }) });
+        const res = await fetch(API_BASE + '/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear-all', token: getToken() }) });
         const data = await res.json();
         if (data.success) { showMessage(data.message, 'success'); document.getElementById('codeResult').classList.remove('show'); loadCodes(); }
         else { showMessage(data.message, 'error'); }

@@ -78,7 +78,7 @@
       if (password !== confirmPassword) { showMessage('Passwords do not match.', 'error'); return; }
       const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'Resetting...';
       try {
-        const res = await fetch(API_BASE + '/api/auth/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password }) });
+        const res = await fetch(API_BASE + '/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset', token, password }) });
         const data = await res.json();
         if (data.success) { showSuccess(); } else { showMessage(data.message, 'error'); }
       } catch (err) { showMessage('An error occurred. Please try again.', 'error'); }
