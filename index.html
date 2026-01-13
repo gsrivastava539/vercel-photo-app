@@ -445,7 +445,12 @@
         const data = await res.json();
         
         if (data.valid) {
-          showAppSection(data.email, data.isAdmin);
+          // Redirect to appropriate page
+          if (data.isAdmin) {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/dashboard';
+          }
         } else {
           localStorage.removeItem('authToken');
           localStorage.removeItem('userEmail');
@@ -490,7 +495,7 @@
           if (data.isAdmin) {
             window.location.href = '/admin';
           } else {
-            showAppSection(data.email, false);
+            window.location.href = '/dashboard';
           }
         } else {
           showMessage(data.message, 'error');
