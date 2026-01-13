@@ -21,34 +21,44 @@ module.exports = async (req, res) => {
   }
   
   try {
+    console.log('Signup request received:', JSON.stringify(req.body));
+    
     const { email, password } = req.body;
     
     // Validate input
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
     
     // Format email
     const fullEmail = email.toLowerCase().trim() + '@gmail.com';
+    console.log('Processing signup for:', fullEmail);
     
     // Validate password
     const passwordValidation = auth.validatePassword(password);
     if (!passwordValidation.valid) {
+      console.log('Password validation failed:', passwordValidation.message);
       return res.status(400).json({ success: false, message: passwordValidation.message });
     }
     
     // Check if account exists
+    console.log('Checking if account exists...');
     const existingAccount = await db.findAccountByEmail(fullEmail);
     if (existingAccount) {
+      console.log('Account already exists');
       return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
     }
     
     // Hash password and create account
+    console.log('Creating account...');
     const hashedPassword = await auth.hashPassword(password);
     await db.createAccount(fullEmail, hashedPassword);
+    console.log('Account created successfully');
     
     // Check if user is admin
     const isAdmin = await db.isAdmin(fullEmail);
+    console.log('Is admin:', isAdmin);
     
     return res.status(200).json({
       success: true,
@@ -58,7 +68,12 @@ module.exports = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Signup error:', error);
-    return res.status(500).json({ success: false, message: 'An error occurred. Please try again.' });
+    console.error('Signup error:', error.message);
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'An error occurred. Please try again.',
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
