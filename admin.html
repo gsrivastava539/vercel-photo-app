@@ -216,6 +216,19 @@
     
     <div id="message" class="message"></div>
     
+    <!-- Stats -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 50px; height: 50px; background: rgba(79, 70, 229, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 1.5rem;">👥</span>
+        </div>
+        <div>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px;">Total Registered Users</p>
+          <p style="font-size: 1.75rem; font-weight: 700; color: var(--primary);" id="userCount">-</p>
+        </div>
+      </div>
+    </div>
+    
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" onclick="showTab('codes')">Verification Codes</button>
@@ -317,6 +330,7 @@
         if (!data.valid || !data.isAdmin) { window.location.href = '/'; return; }
         loadCodes();
         loadOrders();
+        loadUserCount();
       } catch (err) { console.error('Admin verification failed:', err); window.location.href = '/'; }
     }
     
@@ -501,6 +515,22 @@
       }
       btn.disabled = false;
       btn.textContent = 'Delete All Data';
+    }
+    
+    async function loadUserCount() {
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'user-count', token: getToken() })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('userCount').textContent = data.count;
+        }
+      } catch (err) {
+        console.error('Failed to load user count:', err);
+      }
     }
     
     function handleLogout() {

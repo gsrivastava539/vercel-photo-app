@@ -41,6 +41,8 @@ module.exports = async (req, res) => {
         return await handleGetAllOrders(req, res);
       case 'update-pickup':
         return await handleUpdatePickup(req, res);
+      case 'user-count':
+        return await handleUserCount(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -169,5 +171,20 @@ async function handleUpdatePickup(req, res) {
   }
   
   return res.status(200).json({ success: true, message: 'Instructions updated!', order: data });
+}
+
+async function handleUserCount(req, res) {
+  const supabase = db.getSupabase();
+  
+  const { count, error } = await supabase
+    .from('accounts')
+    .select('*', { count: 'exact', head: true });
+  
+  if (error) {
+    console.error('Error getting user count:', error);
+    return res.status(500).json({ success: false, message: 'Failed to get user count.' });
+  }
+  
+  return res.status(200).json({ success: true, count: count || 0 });
 }
 
