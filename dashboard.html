@@ -302,6 +302,12 @@
         </div>
         
         <div class="form-group">
+          <label>Your Phone Number <span class="required">*</span></label>
+          <input type="tel" id="phone" placeholder="Enter your phone number" oninput="validateStep1()">
+          <p class="helper-text">For order updates and correspondence.</p>
+        </div>
+        
+        <div class="form-group">
           <label>Your Address <span class="required">*</span></label>
           <textarea id="address" placeholder="Enter your address to find the nearest CVS/Walgreens photo locations" oninput="validateStep1()"></textarea>
           <p class="helper-text">We'll use this to locate the nearest CVS or Walgreens for photo printing.</p>
@@ -541,10 +547,11 @@
     function validateStep1() {
       const country = document.getElementById('country').value;
       const otherCountry = document.getElementById('otherCountry').value;
+      const phone = document.getElementById('phone').value.trim();
       const address = document.getElementById('address').value.trim();
       const file = document.getElementById('photoFile').files[0];
       
-      let valid = file && country && address;
+      let valid = file && country && phone && address;
       if (country === 'Other' && !otherCountry.trim()) valid = false;
       
       document.getElementById('step1Btn').disabled = !valid;
@@ -555,6 +562,7 @@
       const file = document.getElementById('photoFile').files[0];
       const country = document.getElementById('country').value;
       const otherCountry = document.getElementById('otherCountry').value;
+      const phone = document.getElementById('phone').value.trim();
       const address = document.getElementById('address').value.trim();
       
       const finalCountry = country === 'Other' ? otherCountry.trim() : country;
@@ -574,6 +582,7 @@
               fileName: file.name,
               fileData: e.target.result,
               country: finalCountry,
+              phone: phone,
               address: address
             })
           });
@@ -703,6 +712,7 @@
       // Reset form
       document.getElementById('country').value = '';
       document.getElementById('otherCountry').value = '';
+      document.getElementById('phone').value = '';
       document.getElementById('address').value = '';
       document.getElementById('photoFile').value = '';
       document.getElementById('fileName').style.display = 'none';

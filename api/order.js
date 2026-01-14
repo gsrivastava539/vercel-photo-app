@@ -54,14 +54,17 @@ module.exports = async (req, res) => {
 };
 
 async function handleUpload(req, res, decoded) {
-  const { fileName, fileData, country, address } = req.body;
+  const { fileName, fileData, country, phone, address } = req.body;
   const userEmail = decoded.email;
   const sanitizedEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_');
   const folderPath = `/UserPhotos/${sanitizedEmail}`;
   
-  // Validate country
+  // Validate required fields
   if (!country) {
     return res.status(400).json({ success: false, message: 'Please select a country.' });
+  }
+  if (!phone) {
+    return res.status(400).json({ success: false, message: 'Please enter your phone number.' });
   }
   
   // Create folder
@@ -84,7 +87,7 @@ async function handleUpload(req, res, decoded) {
     sharedLink = linkResult.url;
   }
   
-  // Create order with country and address
+  // Create order with country, phone, and address
   const supabase = db.getSupabase();
   const { data: order, error } = await supabase
     .from('orders')
@@ -94,6 +97,7 @@ async function handleUpload(req, res, decoded) {
       dropbox_folder: folderPath,
       dropbox_link: sharedLink,
       country: country,
+      phone: phone,
       address: address || null
     })
     .select()

@@ -6,6 +6,7 @@
 const db = require('../lib/db');
 const authLib = require('../lib/auth');
 const dropbox = require('../lib/dropbox');
+const email = require('../lib/email');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,6 +43,8 @@ module.exports = async (req, res) => {
         return await handleUpdatePickup(req, res);
       case 'user-count':
         return await handleUserCount(req, res);
+      case 'send-ready-email':
+        return await handleSendReadyEmail(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -151,5 +154,46 @@ async function handleUserCount(req, res) {
   }
   
   return res.status(200).json({ success: true, count: count || 0 });
+}
+
+async function handleSendReadyEmail(req, res) {
+  const { orderId } = req.body;
+  
+  if (!orderId) {
+    return res.status(400).json({ success: false, message: 'Order ID is required.' });
+  }
+  
+  const supabase = db.getSupabase();
+  
+  // Get the order
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', orderId)
+    .single();
+  
+  if (error || !order) {
+    console.error('Error fetching order:', error);
+    return res.status(404).json({ success: false, message: 'Order not found.' });
+  }
+  
+  // Send email
+  const result = await email.sendReadyForPickupEmail(
+    order.user_email,
+    order.pickup_instructions,
+    { country: order.country }
+  );
+  
+  if (!result.success) {
+    return res.status(500).json({ success: false, message: 'Failed to send email: ' + result.error });
+  }
+  
+  // Update order status to completed
+  await supabase
+    .from('orders')
+    .update({ status: 'completed', completed_at: new Date().toISOString() })
+    .eq('id', orderId);
+  
+  return res.status(200).json({ success: true, message: 'Ready for pickup email sent!' });
 }
 

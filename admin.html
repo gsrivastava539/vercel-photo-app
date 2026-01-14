@@ -279,6 +279,7 @@
             <thead>
               <tr>
                 <th>User Email</th>
+                <th>Phone</th>
                 <th>Country</th>
                 <th>Address</th>
                 <th>Status</th>
@@ -427,16 +428,25 @@
           data.orders.forEach(order => {
             const tr = document.createElement('tr');
             const statusClass = order.status.replace(/_/g, '-');
+            const canSendEmail = order.status === 'approved' && order.pickup_instructions;
             tr.innerHTML = `
               <td><strong>${order.user_email}</strong></td>
+              <td>${order.phone || '-'}</td>
               <td>${order.country || '-'}</td>
               <td style="max-width: 150px; white-space: pre-wrap; word-break: break-word;">${order.address || '-'}</td>
               <td><span class="status ${statusClass}">${order.status.replace(/_/g, ' ')}</span></td>
               <td style="max-width: 200px; white-space: pre-wrap; word-break: break-word;">${order.pickup_instructions || '<em style="color: var(--text-muted);">Not set</em>'}</td>
               <td>
-                <button class="btn btn-primary btn-sm" onclick="openPickupModal('${order.id}', '${order.user_email}', \`${(order.pickup_instructions || '').replace(/`/g, '\\`')}\`)">
-                  Edit Instructions
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <button class="btn btn-primary btn-sm" onclick="openPickupModal('${order.id}', '${order.user_email}', \`${(order.pickup_instructions || '').replace(/`/g, '\\`')}\`)">
+                    Edit Instructions
+                  </button>
+                  ${canSendEmail ? `
+                    <button class="btn btn-success btn-sm" onclick="sendReadyEmail('${order.id}', '${order.user_email}')">
+                      Send Ready Email
+                    </button>
+                  ` : (order.status === 'completed' ? '<span style="color: var(--success); font-size: 0.8rem;">✓ Email sent</span>' : '')}
+                </div>
               </td>
             `;
             tbody.appendChild(tr);
@@ -488,6 +498,32 @@
         }
       } catch (err) {
         showMessage('Failed to save instructions.', 'error');
+      }
+    }
+    
+    async function sendReadyEmail(orderId, userEmail) {
+      if (!confirm(`Send "Ready for Pickup" email to ${userEmail}?`)) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send-ready-email',
+            token: getToken(),
+            orderId: orderId
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('Email sent successfully!', 'success');
+          loadOrders(); // Refresh to show updated status
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Failed to send email.', 'error');
       }
     }
     
