@@ -4,6 +4,7 @@
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/reset", "destination": "/reset.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" }
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/photo-processor", "destination": "/photo-processor.html" }
   ]
 }
