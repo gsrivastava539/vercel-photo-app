@@ -108,6 +108,9 @@ async function handleUpload(req, res, decoded) {
     return res.status(500).json({ success: false, message: 'Failed to create order.' });
   }
   
+  // Cleanup: Keep only last 3 orders per user (free tier optimization)
+  await cleanupOldOrders(supabase, userEmail, 3);
+  
   return res.status(200).json({ success: true, message: 'Photo uploaded!', order: order });
 }
 
@@ -256,5 +259,45 @@ async function handleApprove(req, res) {
 function sendHtml(res, title, msg, success) {
   res.setHeader('Content-Type', 'text/html');
   res.status(200).send(`<!DOCTYPE html><html><head><title>${title}</title><style>body{font-family:system-ui;background:#f8fafc;color:#1e293b;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}.card{background:#ffffff;padding:40px;border-radius:16px;text-align:center;max-width:500px;box-shadow:0 4px 6px rgba(0,0,0,0.1)}h1{color:${success?'#059669':'#dc2626'}}a{color:#4f46e5}</style></head><body><div class="card"><h1>${title}</h1><p>${msg}</p></div></body></html>`);
+}
+
+// Keep only the last N orders per user to optimize storage
+async function cleanupOldOrders(supabase, userEmail, keepCount) {
+  try {
+    // Get all orders for this user, ordered by creation date (newest first)
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id, dropbox_folder')
+      .eq('user_email', userEmail)
+      .order('created_at', { ascending: false });
+    
+    if (!orders || orders.length <= keepCount) {
+      return; // Nothing to cleanup
+    }
+    
+    // Get orders to delete (all except the newest 'keepCount')
+    const ordersToDelete = orders.slice(keepCount);
+    const idsToDelete = ordersToDelete.map(o => o.id);
+    
+    // Delete old orders from database
+    if (idsToDelete.length > 0) {
+      await supabase
+        .from('orders')
+        .delete()
+        .in('id', idsToDelete);
+      
+      console.log(`Cleaned up ${idsToDelete.length} old orders for ${userEmail}`);
+      
+      // Optionally delete old Dropbox folders (commented out to avoid API calls)
+      // for (const order of ordersToDelete) {
+      //   if (order.dropbox_folder) {
+      //     await dropbox.deleteFolder(order.dropbox_folder);
+      //   }
+      // }
+    }
+  } catch (err) {
+    console.error('Cleanup error (non-fatal):', err);
+    // Don't fail the main operation if cleanup fails
+  }
 }
 
