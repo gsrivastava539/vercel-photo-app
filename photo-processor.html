@@ -322,7 +322,13 @@
 </head>
 <body>
   <div class="container">
-    <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <a href="/dashboard" class="back-link" id="backLink">← Back to Dashboard</a>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <span id="userEmailDisplay" style="color: var(--text-muted); font-size: 0.85rem;"></span>
+        <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
     
     <div class="header">
       <h1>📸 Photo Processor</h1>
@@ -456,9 +462,56 @@
     // After creating your Hugging Face Space, replace this URL:
     const HF_SPACE_URL = 'https://YOUR-USERNAME-passport-photo-processor.hf.space';
     // ============================================
-
+    
+    const API_BASE = '';
     let selectedFile = null;
     let processedImageData = null;
+    let isAdmin = false;
+
+    // Authentication check on page load
+    window.onload = function() {
+      const token = localStorage.getItem('authToken');
+      const email = localStorage.getItem('userEmail');
+      
+      if (!token || !email) {
+        window.location.href = '/';
+        return;
+      }
+      
+      document.getElementById('userEmailDisplay').textContent = email;
+      verifySession(token);
+    };
+    
+    async function verifySession(token) {
+      try {
+        const res = await fetch(API_BASE + '/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'verify', token })
+        });
+        const data = await res.json();
+        
+        if (!data.valid) {
+          handleLogout();
+          return;
+        }
+        
+        isAdmin = data.isAdmin;
+        // Update back link based on user type
+        if (isAdmin) {
+          document.getElementById('backLink').href = '/admin';
+          document.getElementById('backLink').textContent = '← Back to Admin';
+        }
+      } catch (err) {
+        console.error('Session verification failed:', err);
+      }
+    }
+    
+    function handleLogout() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userEmail');
+      window.location.href = '/';
+    }
 
     document.getElementById('currentYear').textContent = new Date().getFullYear();
 
