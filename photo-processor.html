@@ -580,70 +580,125 @@
       try {
         // Convert file to base64
         const base64 = await fileToBase64(selectedFile);
-        const base64Data = base64.split(',')[1]; // Remove data:image/...;base64, prefix
 
-        // Prepare parameters
-        const params = {
-          data: [
-            base64Data,
-            document.getElementById('removeBg').checked,
-            document.getElementById('photoSize').value,
-            parseInt(document.getElementById('customWidth').value),
-            parseInt(document.getElementById('customHeight').value),
-            document.getElementById('borderColor').value,
-            parseInt(document.getElementById('borderWidth').value),
-            document.getElementById('outputFormat').value
-          ]
-        };
-
-        // Call Hugging Face API
-        const response = await fetch(`${HF_SPACE_URL}/api/predict`, {
+        // For Gradio 4.x, we need to use the /call endpoint with proper format
+        // Step 1: Submit the job
+        const submitResponse = await fetch(`${HF_SPACE_URL}/call/process_photo`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(params)
+          body: JSON.stringify({
+            data: [
+              base64,  // Send full data URL
+              document.getElementById('removeBg').checked,
+              document.getElementById('photoSize').value,
+              parseInt(document.getElementById('customWidth').value),
+              parseInt(document.getElementById('customHeight').value),
+              document.getElementById('borderColor').value,
+              parseInt(document.getElementById('borderWidth').value),
+              document.getElementById('outputFormat').value
+            ]
+          })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!submitResponse.ok) {
+          // Try the legacy /run endpoint as fallback
+          const legacyResponse = await fetch(`${HF_SPACE_URL}/run/process_photo`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: [
+                base64,
+                document.getElementById('removeBg').checked,
+                document.getElementById('photoSize').value,
+                parseInt(document.getElementById('customWidth').value),
+                parseInt(document.getElementById('customHeight').value),
+                document.getElementById('borderColor').value,
+                parseInt(document.getElementById('borderWidth').value),
+                document.getElementById('outputFormat').value
+              ]
+            })
+          });
+          
+          if (!legacyResponse.ok) {
+            throw new Error(`HTTP error! status: ${legacyResponse.status}`);
+          }
+          
+          const legacyResult = await legacyResponse.json();
+          handleResult(legacyResult.data);
+          return;
         }
 
-        const result = await response.json();
+        const submitResult = await submitResponse.json();
+        const eventId = submitResult.event_id;
 
-        if (result.data && result.data[0]) {
-          // The processed image comes back as base64 or a URL
-          const processedImage = result.data[0];
-          
-          // Handle different response formats
-          let imageUrl;
-          if (typeof processedImage === 'string') {
-            if (processedImage.startsWith('data:')) {
-              imageUrl = processedImage;
-            } else if (processedImage.startsWith('http')) {
-              imageUrl = processedImage;
-            } else {
-              // Assume it's base64 without prefix
-              imageUrl = `data:image/jpeg;base64,${processedImage}`;
+        // Step 2: Get the result using SSE
+        showStatus('Processing image... This may take 15-30 seconds.', 'processing');
+        
+        const resultResponse = await fetch(`${HF_SPACE_URL}/call/process_photo/${eventId}`);
+        const resultText = await resultResponse.text();
+        
+        // Parse SSE response - look for data: lines
+        const lines = resultText.split('\n');
+        let resultData = null;
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              resultData = JSON.parse(line.substring(6));
+            } catch (e) {
+              // Continue looking
             }
-          } else if (processedImage.url) {
-            imageUrl = processedImage.url;
           }
-
-          processedImageData = imageUrl;
-          document.getElementById('processedPreview').src = imageUrl;
-          document.getElementById('downloadCard').style.display = 'block';
-          showStatus(result.data[1] || '✅ Photo processed successfully!', 'success');
+        }
+        
+        if (resultData) {
+          handleResult(resultData);
         } else {
-          throw new Error('No processed image in response');
+          throw new Error('No valid response received from processor');
         }
 
       } catch (error) {
         console.error('Processing error:', error);
-        showStatus(`Error: ${error.message}. Make sure your Hugging Face Space is running.`, 'error');
+        showStatus(`Error: ${error.message}. Make sure your Hugging Face Space is running and awake.`, 'error');
       } finally {
         btn.disabled = false;
         btn.innerHTML = '🚀 Process Photo';
+      }
+    }
+    
+    function handleResult(data) {
+      if (data && data[0]) {
+        // The processed image comes back as base64 or a URL
+        const processedImage = data[0];
+        
+        // Handle different response formats
+        let imageUrl;
+        if (typeof processedImage === 'string') {
+          if (processedImage.startsWith('data:')) {
+            imageUrl = processedImage;
+          } else if (processedImage.startsWith('http')) {
+            imageUrl = processedImage;
+          } else {
+            // Assume it's base64 without prefix
+            imageUrl = `data:image/jpeg;base64,${processedImage}`;
+          }
+        } else if (processedImage.url) {
+          imageUrl = processedImage.url;
+        } else if (processedImage.path) {
+          // Gradio 4.x returns file path - construct URL
+          imageUrl = `${HF_SPACE_URL}/file=${processedImage.path}`;
+        }
+
+        processedImageData = imageUrl;
+        document.getElementById('processedPreview').src = imageUrl;
+        document.getElementById('downloadCard').style.display = 'block';
+        showStatus(data[1] || '✅ Photo processed successfully!', 'success');
+      } else {
+        throw new Error('No processed image in response');
       }
     }
 
