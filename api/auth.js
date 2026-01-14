@@ -38,6 +38,8 @@ module.exports = async (req, res) => {
   }
 };
 
+const ADMIN_EMAIL = 'studentone.qa@gmail.com';
+
 async function handleSignup(req, res) {
   const { email, password } = req.body;
   
@@ -65,6 +67,38 @@ async function handleSignup(req, res) {
   await db.createAccount(fullEmail, hashedPassword);
   
   const isAdmin = await db.isAdmin(fullEmail);
+  
+  // Send notification email to admin about new user
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: 'Digital Photo <noreply@parallaxbay.com>',
+      to: [ADMIN_EMAIL],
+      subject: '🆕 New User Registered - Digital Photo',
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <h2 style="color: #4f46e5; margin: 0 0 20px; text-align: center;">🆕 New User Registered</h2>
+      <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+        <p style="margin: 0; font-size: 14px; color: #64748b;">Email Address:</p>
+        <p style="margin: 4px 0 0; font-size: 18px; font-weight: 600; color: #1e293b;">${fullEmail}</p>
+      </div>
+      <p style="margin: 0; color: #64748b; font-size: 14px; text-align: center;">
+        Registered at: ${new Date().toLocaleString()}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send new user notification:', emailError);
+    // Don't fail signup if email fails
+  }
   
   return res.status(200).json({
     success: true,
