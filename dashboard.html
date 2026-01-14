@@ -164,6 +164,38 @@
     .message.error { background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); color: var(--error); }
     .message.warning { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.2); color: var(--warning); }
     
+    /* Pricing Box */
+    .pricing-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: linear-gradient(135deg, rgba(5, 150, 105, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
+      border: 2px solid var(--success);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .price-tag {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--success);
+      line-height: 1;
+    }
+    .price-details {
+      flex: 1;
+    }
+    .price-details strong {
+      font-size: 1.1rem;
+      color: var(--text);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .price-details p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    
     /* Info Box */
     .info-box {
       background: rgba(79, 70, 229, 0.05);
@@ -339,6 +371,14 @@
       <div class="card">
         <h2>Complete Payment</h2>
         <p class="subtitle">Please complete the payment using one of the options below.</p>
+        
+        <div class="pricing-box">
+          <div class="price-tag">$10</div>
+          <div class="price-details">
+            <strong>Flat Fee</strong>
+            <p>4 copies (Digital + Print)</p>
+          </div>
+        </div>
         
         <div class="info-box">
           <p><strong>Payment Options:</strong></p>
