@@ -27,7 +27,8 @@
       min-height: 100vh;
       color: var(--text);
     }
-    .container { max-width: 800px; margin: 0 auto; padding: 32px 20px; }
+    .container { max-width: 600px; margin: 0 auto; padding: 32px 20px; }
+    
     header {
       display: flex;
       justify-content: space-between;
@@ -38,91 +39,84 @@
       border-radius: 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
+    h1 { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
     .header-actions { display: flex; gap: 12px; align-items: center; }
-    .user-email { color: var(--text-muted); font-size: 0.9rem; margin-right: 8px; }
+    .user-email { color: var(--text-muted); font-size: 0.85rem; }
+    
     .btn {
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.9rem;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
       border: none;
       transition: all 0.2s;
     }
-    .btn-secondary {
-      background: var(--step-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
+    .btn-secondary { background: var(--step-bg); border: 1px solid var(--border); color: var(--text); }
     .btn-secondary:hover { background: var(--border); }
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: var(--primary-light);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-    }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-light); transform: translateY(-1px); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
     
-    /* Step Cards */
-    .step-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      margin-bottom: 20px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .step-header {
+    /* Step Progress */
+    .step-progress {
       display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 20px 24px;
-      background: var(--step-bg);
-      border-bottom: 1px solid var(--border);
+      justify-content: space-between;
+      margin-bottom: 32px;
+      position: relative;
     }
-    .step-number {
-      width: 36px;
-      height: 36px;
-      background: var(--primary);
-      color: white;
+    .step-progress::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 50px;
+      right: 50px;
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+    }
+    .step-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1;
+    }
+    .step-circle {
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-    .step-number.completed { background: var(--success); }
-    .step-title { font-size: 1.1rem; font-weight: 600; color: var(--text); }
-    .step-content { padding: 24px; }
-    .step-description {
+      font-weight: 600;
       color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-bottom: 20px;
-      line-height: 1.6;
+      margin-bottom: 8px;
     }
-
+    .step-circle.active { border-color: var(--primary); color: var(--primary); background: rgba(79, 70, 229, 0.1); }
+    .step-circle.completed { border-color: var(--success); background: var(--success); color: white; }
+    .step-label { font-size: 0.8rem; color: var(--text-muted); text-align: center; }
+    .step-label.active { color: var(--primary); font-weight: 500; }
+    
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .card h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+    .card .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5; }
+    
     /* Form Elements */
     .form-group { margin-bottom: 20px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
-    label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: var(--text);
-      font-size: 0.9rem;
-    }
-    label .optional { color: var(--text-muted); font-weight: 400; }
+    @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+    label { display: block; font-weight: 500; margin-bottom: 8px; color: var(--text); font-size: 0.9rem; }
+    .required { color: var(--error); }
     input, select, textarea {
       width: 100%;
       padding: 12px 16px;
@@ -132,7 +126,6 @@
       color: var(--text);
       font-size: 1rem;
       font-family: inherit;
-      transition: border-color 0.2s, box-shadow 0.2s;
     }
     input:focus, select:focus, textarea:focus {
       outline: none;
@@ -140,7 +133,8 @@
       box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
     }
     textarea { resize: vertical; min-height: 80px; }
-
+    .helper-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
+    
     /* Upload Area */
     .upload-area {
       border: 2px dashed var(--border);
@@ -156,8 +150,8 @@
     .upload-area p { color: var(--text-muted); margin-bottom: 8px; }
     .upload-area input { display: none; }
     .file-name { font-size: 0.9rem; color: var(--success); margin-top: 12px; font-weight: 500; }
-
-    /* Messages */
+    
+    /* Message */
     .message {
       padding: 14px 16px;
       border-radius: 10px;
@@ -168,16 +162,30 @@
     .message.show { display: block; }
     .message.success { background: rgba(5, 150, 105, 0.1); border: 1px solid rgba(5, 150, 105, 0.2); color: var(--success); }
     .message.error { background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); color: var(--error); }
-
-    /* Status Area */
-    .status-box {
+    .message.warning { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.2); color: var(--warning); }
+    
+    /* Info Box */
+    .info-box {
+      background: rgba(79, 70, 229, 0.05);
+      border: 1px solid rgba(79, 70, 229, 0.15);
+      border-radius: 10px;
       padding: 20px;
+      margin-bottom: 24px;
+    }
+    .info-box p { color: var(--text); font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px; }
+    .info-box p:last-child { margin-bottom: 0; }
+    .info-box strong { color: var(--primary); }
+    .info-box .phone { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 1.1rem; }
+    
+    /* Status Box */
+    .status-box {
       background: var(--step-bg);
       border-radius: 12px;
-      margin-top: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
     }
-    .status-box h4 { font-size: 1rem; margin-bottom: 12px; color: var(--text); }
-    .status-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 8px; }
+    .status-box h4 { font-size: 0.95rem; color: var(--text); margin-bottom: 12px; }
+    .status-box p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; }
     .status-badge {
       display: inline-block;
       padding: 4px 12px;
@@ -188,78 +196,98 @@
     .status-badge.pending { background: rgba(217, 119, 6, 0.1); color: var(--warning); }
     .status-badge.paid { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
     .status-badge.approved { background: rgba(5, 150, 105, 0.1); color: var(--success); }
-    .status-badge.completed { background: rgba(5, 150, 105, 0.1); color: var(--success); }
-    .code-display {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--success);
-      letter-spacing: 4px;
-    }
-
-    /* Info Box */
-    .info-box {
-      background: rgba(79, 70, 229, 0.05);
-      border: 1px solid rgba(79, 70, 229, 0.15);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .info-box p { color: var(--text); font-size: 0.9rem; line-height: 1.6; margin: 0; }
-    .info-box strong { color: var(--primary); }
-
-    /* Pickup Instructions Box */
+    
+    /* Pickup Box */
     .pickup-box {
       background: rgba(5, 150, 105, 0.05);
       border: 1px solid rgba(5, 150, 105, 0.15);
       border-radius: 10px;
       padding: 20px;
+      margin-bottom: 20px;
     }
-    .pickup-box h4 { color: var(--success); margin-bottom: 12px; font-size: 1rem; }
+    .pickup-box h4 { color: var(--success); margin-bottom: 12px; font-size: 0.95rem; }
     .pickup-box p { color: var(--text); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; }
-    .pickup-box .no-instructions { color: var(--text-muted); font-style: italic; }
-
-    /* History Table */
+    
+    /* Order History Table */
+    .history-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+    .history-section h4 { font-size: 0.95rem; margin-bottom: 16px; color: var(--text); }
     table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--step-bg); }
-    td { font-size: 0.95rem; color: var(--text); }
-    .empty-state, .loading { text-align: center; padding: 40px; color: var(--text-muted); }
-
-    @media (max-width: 640px) {
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    th { font-weight: 600; color: var(--text-muted); background: var(--step-bg); }
+    
+    .refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--step-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .refresh-btn:hover { background: var(--border); }
+    
+    .waiting-notice {
+      background: rgba(217, 119, 6, 0.05);
+      border: 1px solid rgba(217, 119, 6, 0.15);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .waiting-notice p { color: var(--warning); font-size: 0.9rem; margin-bottom: 12px; }
+    
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+    
+    @media (max-width: 500px) {
       .container { padding: 16px; }
-      header { flex-direction: column; gap: 12px; align-items: flex-start; }
+      header { flex-direction: column; gap: 12px; align-items: flex-start; padding: 16px; }
       .header-actions { width: 100%; justify-content: space-between; }
-      .step-header { padding: 16px; }
-      .step-content { padding: 16px; }
-      th, td { padding: 10px 8px; font-size: 0.85rem; }
+      .card { padding: 20px; }
+      .step-progress::before { left: 30px; right: 30px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Digital Photo Dashboard</h1>
+      <h1>Photo Request Dashboard</h1>
       <div class="header-actions">
         <span id="userEmailDisplay" class="user-email"></span>
-        <button class="btn btn-secondary" onclick="handleLogout()">Logout</button>
+        <button class="btn btn-secondary btn-sm" onclick="handleLogout()">Logout</button>
       </div>
     </header>
     
     <div id="message" class="message"></div>
-
-    <!-- Step 1: Upload Photo -->
-    <div class="step-card">
-      <div class="step-header">
-        <div class="step-number" id="step1Number">1</div>
-        <div class="step-title">Upload Your Photograph</div>
+    
+    <!-- Step Progress -->
+    <div class="step-progress">
+      <div class="step-indicator">
+        <div class="step-circle active" id="step1Circle">1</div>
+        <span class="step-label active" id="step1Label">Upload</span>
       </div>
-      <div class="step-content">
-        <p class="step-description">Upload a picture from your phone covering half body. We'll create a dedicated folder for your photos and process them professionally.</p>
+      <div class="step-indicator">
+        <div class="step-circle" id="step2Circle">2</div>
+        <span class="step-label" id="step2Label">Payment</span>
+      </div>
+      <div class="step-indicator">
+        <div class="step-circle" id="step3Circle">3</div>
+        <span class="step-label" id="step3Label">Pickup</span>
+      </div>
+    </div>
+    
+    <!-- Step 1: Upload Photo -->
+    <div class="step-content active" id="step1Content">
+      <div class="card">
+        <h2>Upload Your Photograph</h2>
+        <p class="subtitle">Upload a picture from your phone covering half body. We'll process it professionally for you.</p>
         
         <div class="form-row">
           <div class="form-group">
-            <label>Country <span class="optional">(Required)</span></label>
+            <label>Photo for which country? <span class="required">*</span></label>
             <select id="country" onchange="handleCountryChange()">
               <option value="">Select Country</option>
               <option value="US">United States</option>
@@ -268,136 +296,108 @@
             </select>
           </div>
           <div class="form-group" id="otherCountryGroup" style="display: none;">
-            <label>Specify Country <span class="optional">(Required)</span></label>
-            <input type="text" id="otherCountry" placeholder="Enter country name">
+            <label>Specify Country <span class="required">*</span></label>
+            <input type="text" id="otherCountry" placeholder="Enter country name" oninput="validateStep1()">
           </div>
         </div>
         
         <div class="form-group">
-          <label>Your Address <span class="optional">(Required)</span></label>
-          <textarea id="address" placeholder="Enter your address to find the nearest CVS/Walgreens photo locations" required oninput="validateUploadForm()"></textarea>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">We'll use this to locate the nearest CVS or Walgreens for photo printing.</p>
+          <label>Your Address <span class="required">*</span></label>
+          <textarea id="address" placeholder="Enter your address to find the nearest CVS/Walgreens photo locations" oninput="validateStep1()"></textarea>
+          <p class="helper-text">We'll use this to locate the nearest CVS or Walgreens for photo printing.</p>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
-          <p>Click or drag to upload your photo</p>
-          <p style="font-size: 0.85rem; color: var(--text-muted);">Supported: JPG, PNG (Max 5MB)</p>
+          <p>Click to upload your photo</p>
+          <p style="font-size: 0.85rem;">Supported: JPG, PNG (Max 5MB)</p>
           <input type="file" id="photoFile" accept="image/*" onchange="handleFileSelect(event)">
           <div class="file-name" id="fileName" style="display: none;"></div>
         </div>
         
-        <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" id="uploadBtn" onclick="handleUpload()" disabled>Upload Photo</button>
+        <button class="btn btn-primary" style="margin-top: 20px;" id="step1Btn" onclick="submitStep1()" disabled>
+          Continue to Payment
+        </button>
       </div>
     </div>
-
+    
     <!-- Step 2: Payment -->
-    <div class="step-card">
-      <div class="step-header">
-        <div class="step-number" id="step2Number">2</div>
-        <div class="step-title">Make Payment</div>
-      </div>
-      <div class="step-content">
-        <p class="step-description">Complete your payment to proceed with photo processing.</p>
+    <div class="step-content" id="step2Content">
+      <div class="card">
+        <h2>Complete Payment</h2>
+        <p class="subtitle">Please complete the payment using one of the options below.</p>
         
         <div class="info-box">
           <p><strong>Payment Options:</strong></p>
-          <p style="margin-top: 8px;">• <strong>Zelle:</strong> Send payment to our Zelle account</p>
+          <p>• <strong>Zelle:</strong> Send payment to our Zelle account</p>
           <p>• <strong>Venmo:</strong> Pay via Venmo</p>
-          <p style="margin-top: 12px; color: var(--text-muted);">Once payment is complete, click the button below to notify us. We will verify and approve your order.</p>
-          <p style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);">
-            <strong>Questions?</strong> Reach out on WhatsApp: <a href="https://wa.me/15513587475" target="_blank" style="color: var(--primary); font-weight: 500;">551-358-7475</a>
+          <p style="margin-top: 12px;">Pay to this number: <span class="phone">551-358-7475</span></p>
+          <p style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(79, 70, 229, 0.15);">
+            <strong>Questions?</strong> WhatsApp: <a href="https://wa.me/15513587475" target="_blank" style="color: var(--primary);">551-358-7475</a>
           </p>
         </div>
         
-        <div id="step2Status" class="status-box" style="display: none;">
-          <h4>Order Status</h4>
-          <p>Status: <span class="status-badge" id="orderStatus"></span></p>
-          <p id="orderDropbox" style="display: none;">Your Photos: <a href="#" target="_blank" id="orderDropboxLink" style="color: var(--primary);">View Folder</a></p>
+        <div class="status-box" id="step2Status">
+          <h4>Your Order</h4>
+          <p>Status: <span class="status-badge" id="orderStatus">PENDING</span></p>
+          <p id="orderFolderP" style="display: none;">Your Photos: <a href="#" target="_blank" id="orderFolderLink" style="color: var(--primary);">View Uploaded Photos</a></p>
         </div>
         
-        <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" id="payBtn" onclick="requestPayment()" style="display: none;">
-          I've Paid - Request Approval
+        <button class="btn btn-primary" id="paymentBtn" onclick="submitPayment()">
+          I've Paid - Notify Admin
         </button>
-        <p id="waitingMsg" style="margin-top: 12px; color: var(--warning); text-align: center; display: none;">
-          Payment verification in progress. We'll notify you once approved.
-        </p>
-      </div>
-    </div>
-
-    <!-- Step 3: Receive Code -->
-    <div class="step-card">
-      <div class="step-header">
-        <div class="step-number" id="step3Number">3</div>
-        <div class="step-title">Receive Verification Code</div>
-      </div>
-      <div class="step-content">
-        <p class="step-description">After payment approval, you'll receive a 6-digit verification code via email. This code is required to download your processed photos.</p>
         
-        <div id="codeDisplay" style="display: none; text-align: center; padding: 24px; background: var(--step-bg); border-radius: 12px;">
-          <p style="color: var(--text-muted); margin-bottom: 8px;">Your Verification Code</p>
-          <span class="code-display" id="orderCode"></span>
+        <div class="waiting-notice" id="waitingNotice" style="display: none;">
+          <p>⏳ Payment verification in progress...</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Check your email for approval notification, then refresh this page.</p>
+          <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh Status</button>
         </div>
-        <p id="noCodeMsg" style="color: var(--text-muted); text-align: center;">
-          Your verification code will appear here once payment is approved.
-        </p>
+        
+        <div id="step3BtnContainer" style="margin-top: 20px; display: none;">
+          <button class="btn btn-primary" id="step3Btn" onclick="goToStep3()">
+            ✓ Payment Approved - View Pickup Details
+          </button>
+        </div>
       </div>
     </div>
-
-    <!-- Step 4: Pickup Instructions -->
-    <div class="step-card">
-      <div class="step-header">
-        <div class="step-number" id="step4Number">4</div>
-        <div class="step-title">Pickup Instructions</div>
-      </div>
-      <div class="step-content">
-        <p class="step-description">Important information about picking up your physical prints (if applicable).</p>
+    
+    <!-- Step 3: Pickup & Status -->
+    <div class="step-content" id="step3Content">
+      <div class="card">
+        <h2>Your Order is Ready!</h2>
+        <p class="subtitle">Here are your order details and pickup information.</p>
+        
+        <div class="status-box">
+          <h4>Order Details</h4>
+          <p>Status: <span class="status-badge approved">APPROVED</span></p>
+          <p id="finalFolderP">Your Photos: <a href="#" target="_blank" id="finalFolderLink" style="color: var(--primary);">View Photos</a></p>
+        </div>
         
         <div class="pickup-box">
-          <h4>Instructions</h4>
-          <p id="pickupInstructions" class="no-instructions">No pickup instructions available yet. Check back after your order is approved.</p>
+          <h4>📍 Pickup Instructions</h4>
+          <p id="pickupInstructions">Your pickup instructions will appear here once set by admin.</p>
         </div>
-      </div>
-    </div>
-
-    <!-- Step 5: Request Digital Photo -->
-    <div class="step-card">
-      <div class="step-header">
-        <div class="step-number" id="step5Number">5</div>
-        <div class="step-title">Request Digital Photo</div>
-      </div>
-      <div class="step-content">
-        <p class="step-description">Enter your verification code to download your professionally processed digital photo.</p>
         
-        <div class="form-group">
-          <label>Verification Code</label>
-          <input type="text" id="code" placeholder="Enter 6-digit code" maxlength="6">
+        <div class="history-section">
+          <h4>Order History</h4>
+          <div id="historyLoading" style="text-align: center; padding: 20px; color: var(--text-muted);">Loading...</div>
+          <table id="historyTable" style="display: none;">
+            <thead><tr><th>Order</th><th>Status</th><th>Country</th><th>Date</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+          <div id="emptyHistory" style="text-align: center; padding: 20px; color: var(--text-muted); display: none;">No previous orders.</div>
         </div>
-        <button class="btn btn-primary" style="width: 100%;" id="requestBtn" onclick="handleRequest()">Download Digital Photo</button>
-        <div id="requestResult" class="message" style="margin-top: 16px;"></div>
-      </div>
-    </div>
-
-    <!-- Order History -->
-    <div class="step-card">
-      <div class="step-header">
-        <div class="step-number" style="background: var(--text-muted);">H</div>
-        <div class="step-title">Order History</div>
-      </div>
-      <div class="step-content" style="padding: 0;">
-        <div id="historyLoading" class="loading">Loading...</div>
-        <table id="historyTable" style="display: none;">
-          <thead><tr><th>Order</th><th>Status</th><th>Code</th><th>Date</th></tr></thead>
-          <tbody id="historyBody"></tbody>
-        </table>
-        <div id="emptyHistory" class="empty-state" style="display: none;">No orders yet. Upload a photo to get started!</div>
+        
+        <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="startNewOrder()">
+          + Start New Order
+        </button>
       </div>
     </div>
   </div>
 
   <script>
     const API_BASE = '';
-    let currentOrderId = null;
     let currentOrder = null;
+    let currentStep = 1;
 
     window.onload = function() {
       const token = localStorage.getItem('authToken');
@@ -405,8 +405,7 @@
       if (!token || !email) { window.location.href = '/'; return; }
       document.getElementById('userEmailDisplay').textContent = email;
       verifySession(token);
-      loadCurrentOrder();
-      loadHistory();
+      checkExistingOrder();
     };
 
     async function verifySession(token) {
@@ -427,21 +426,101 @@
       setTimeout(() => el.className = 'message', 5000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
-    function showRequestResult(msg, type) {
-      const el = document.getElementById('requestResult');
-      el.innerHTML = msg;
-      el.className = 'message show ' + type;
+
+    // Step Navigation
+    function setStep(step) {
+      currentStep = step;
+      
+      // Update circles
+      for (let i = 1; i <= 3; i++) {
+        const circle = document.getElementById(`step${i}Circle`);
+        const label = document.getElementById(`step${i}Label`);
+        const content = document.getElementById(`step${i}Content`);
+        
+        circle.classList.remove('active', 'completed');
+        label.classList.remove('active');
+        content.classList.remove('active');
+        
+        if (i < step) {
+          circle.classList.add('completed');
+          circle.innerHTML = '✓';
+        } else if (i === step) {
+          circle.classList.add('active');
+          label.classList.add('active');
+          content.classList.add('active');
+          circle.innerHTML = i;
+        } else {
+          circle.innerHTML = i;
+        }
+      }
     }
 
+    // Check for existing order
+    async function checkExistingOrder() {
+      try {
+        const res = await fetch(API_BASE + '/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'status', token: getToken() })
+        });
+        const data = await res.json();
+        
+        if (data.success && data.order) {
+          currentOrder = data.order;
+          
+          if (data.order.status === 'pending') {
+            setStep(2);
+            updateStep2UI(data.order);
+          } else if (data.order.status === 'paid') {
+            setStep(2);
+            updateStep2UI(data.order);
+            document.getElementById('paymentBtn').style.display = 'none';
+            document.getElementById('waitingNotice').style.display = 'block';
+          } else if (data.order.status === 'approved' || data.order.status === 'completed') {
+            setStep(3);
+            updateStep3UI(data.order);
+          }
+        }
+        
+        loadHistory();
+      } catch (err) {
+        console.error('Failed to check order:', err);
+      }
+    }
+
+    function updateStep2UI(order) {
+      document.getElementById('orderStatus').textContent = order.status.toUpperCase();
+      document.getElementById('orderStatus').className = 'status-badge ' + order.status;
+      
+      if (order.dropbox_link) {
+        document.getElementById('orderFolderP').style.display = 'block';
+        document.getElementById('orderFolderLink').href = order.dropbox_link;
+      }
+      
+      if (order.status === 'approved') {
+        document.getElementById('paymentBtn').style.display = 'none';
+        document.getElementById('waitingNotice').style.display = 'none';
+        document.getElementById('step3BtnContainer').style.display = 'block';
+      }
+    }
+
+    function updateStep3UI(order) {
+      if (order.dropbox_link) {
+        document.getElementById('finalFolderLink').href = order.dropbox_link;
+      }
+      
+      if (order.pickup_instructions) {
+        document.getElementById('pickupInstructions').textContent = order.pickup_instructions;
+      } else {
+        document.getElementById('pickupInstructions').textContent = 'Pickup instructions will be provided by admin. Check back later or contact us on WhatsApp.';
+      }
+    }
+
+    // Step 1: Validation
     function handleCountryChange() {
       const country = document.getElementById('country').value;
-      const otherGroup = document.getElementById('otherCountryGroup');
-      otherGroup.style.display = country === 'Other' ? 'block' : 'none';
-      if (country !== 'Other') {
-        document.getElementById('otherCountry').value = '';
-      }
-      validateUploadForm();
+      document.getElementById('otherCountryGroup').style.display = country === 'Other' ? 'block' : 'none';
+      validateStep1();
     }
 
     function handleFileSelect(e) {
@@ -451,45 +530,34 @@
         document.getElementById('fileName').textContent = file.name;
         document.getElementById('fileName').style.display = 'block';
         document.getElementById('uploadArea').classList.add('has-file');
-        validateUploadForm();
+        validateStep1();
       }
     }
 
-    function validateUploadForm() {
+    function validateStep1() {
       const country = document.getElementById('country').value;
       const otherCountry = document.getElementById('otherCountry').value;
       const address = document.getElementById('address').value.trim();
       const file = document.getElementById('photoFile').files[0];
       
       let valid = file && country && address;
-      if (country === 'Other' && !otherCountry.trim()) {
-        valid = false;
-      }
+      if (country === 'Other' && !otherCountry.trim()) valid = false;
       
-      document.getElementById('uploadBtn').disabled = !valid;
+      document.getElementById('step1Btn').disabled = !valid;
     }
 
-    async function handleUpload() {
-      const btn = document.getElementById('uploadBtn');
+    async function submitStep1() {
+      const btn = document.getElementById('step1Btn');
       const file = document.getElementById('photoFile').files[0];
       const country = document.getElementById('country').value;
       const otherCountry = document.getElementById('otherCountry').value;
       const address = document.getElementById('address').value.trim();
       
-      if (!file || !country || !address) {
-        showMessage('Please fill in all required fields.', 'error');
-        return;
-      }
-      if (country === 'Other' && !otherCountry.trim()) {
-        showMessage('Please specify your country.', 'error');
-        return;
-      }
-
       const finalCountry = country === 'Other' ? otherCountry.trim() : country;
-
+      
       btn.disabled = true;
       btn.textContent = 'Uploading...';
-
+      
       const reader = new FileReader();
       reader.onload = async function(e) {
         try {
@@ -506,14 +574,12 @@
             })
           });
           const data = await res.json();
+          
           if (data.success) {
+            currentOrder = data.order;
             showMessage('Photo uploaded successfully!', 'success');
-            document.getElementById('photoFile').value = '';
-            document.getElementById('fileName').style.display = 'none';
-            document.getElementById('uploadArea').classList.remove('has-file');
-            document.getElementById('step1Number').classList.add('completed');
-            loadCurrentOrder();
-            loadHistory();
+            setStep(2);
+            updateStep2UI(data.order);
           } else {
             showMessage(data.message, 'error');
           }
@@ -521,12 +587,44 @@
           showMessage('Upload failed. Please try again.', 'error');
         }
         btn.disabled = false;
-        btn.textContent = 'Upload Photo';
+        btn.textContent = 'Continue to Payment';
       };
       reader.readAsDataURL(file);
     }
 
-    async function loadCurrentOrder() {
+    // Step 2: Payment
+    async function submitPayment() {
+      const btn = document.getElementById('paymentBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      
+      try {
+        const res = await fetch(API_BASE + '/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'request-payment', token: getToken(), orderId: currentOrder?.id })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('Payment notification sent! Please wait for approval.', 'success');
+          btn.style.display = 'none';
+          document.getElementById('waitingNotice').style.display = 'block';
+          document.getElementById('orderStatus').textContent = 'PAID';
+          document.getElementById('orderStatus').className = 'status-badge paid';
+        } else {
+          showMessage(data.message, 'error');
+          btn.disabled = false;
+          btn.textContent = "I've Paid - Notify Admin";
+        }
+      } catch (err) {
+        showMessage('Failed to send notification.', 'error');
+        btn.disabled = false;
+        btn.textContent = "I've Paid - Notify Admin";
+      }
+    }
+
+    async function refreshStatus() {
       try {
         const res = await fetch(API_BASE + '/api/order', {
           method: 'POST',
@@ -537,131 +635,29 @@
         
         if (data.success && data.order) {
           currentOrder = data.order;
-          currentOrderId = data.order.id;
-          updateUIWithOrder(data.order);
-        } else {
-          // No active order
-          document.getElementById('step2Status').style.display = 'none';
-          document.getElementById('payBtn').style.display = 'none';
-          document.getElementById('waitingMsg').style.display = 'none';
-          document.getElementById('codeDisplay').style.display = 'none';
-          document.getElementById('noCodeMsg').style.display = 'block';
+          
+          if (data.order.status === 'approved') {
+            showMessage('Payment approved! You can now view pickup details.', 'success');
+            document.getElementById('waitingNotice').style.display = 'none';
+            document.getElementById('step3BtnContainer').style.display = 'block';
+            document.getElementById('orderStatus').textContent = 'APPROVED';
+            document.getElementById('orderStatus').className = 'status-badge approved';
+          } else {
+            showMessage('Still waiting for approval. Please check back later.', 'warning');
+          }
         }
       } catch (err) {
-        console.error('Failed to load order:', err);
+        showMessage('Failed to refresh. Try again.', 'error');
       }
     }
 
-    function updateUIWithOrder(order) {
-      // Step 1 completed if order exists
-      document.getElementById('step1Number').classList.add('completed');
-      
-      // Step 2: Payment status
-      document.getElementById('step2Status').style.display = 'block';
-      const statusEl = document.getElementById('orderStatus');
-      statusEl.textContent = order.status.replace(/_/g, ' ').toUpperCase();
-      statusEl.className = 'status-badge ' + order.status;
-      
-      if (order.dropbox_link) {
-        document.getElementById('orderDropbox').style.display = 'block';
-        document.getElementById('orderDropboxLink').href = order.dropbox_link;
-      }
-      
-      const payBtn = document.getElementById('payBtn');
-      const waitingMsg = document.getElementById('waitingMsg');
-      
-      if (order.status === 'pending') {
-        payBtn.style.display = 'block';
-        waitingMsg.style.display = 'none';
-      } else if (order.status === 'paid') {
-        payBtn.style.display = 'none';
-        waitingMsg.style.display = 'block';
-        document.getElementById('step2Number').classList.add('completed');
-      } else if (order.status === 'approved' || order.status === 'completed') {
-        payBtn.style.display = 'none';
-        waitingMsg.style.display = 'none';
-        document.getElementById('step2Number').classList.add('completed');
-        document.getElementById('step3Number').classList.add('completed');
-      }
-      
-      // Step 3: Verification code
-      if (order.verification_code) {
-        document.getElementById('codeDisplay').style.display = 'block';
-        document.getElementById('orderCode').textContent = order.verification_code;
-        document.getElementById('noCodeMsg').style.display = 'none';
-      } else {
-        document.getElementById('codeDisplay').style.display = 'none';
-        document.getElementById('noCodeMsg').style.display = 'block';
-      }
-      
-      // Step 4: Pickup instructions
-      if (order.pickup_instructions) {
-        const pickupEl = document.getElementById('pickupInstructions');
-        pickupEl.textContent = order.pickup_instructions;
-        pickupEl.classList.remove('no-instructions');
-        document.getElementById('step4Number').classList.add('completed');
-      }
+    function goToStep3() {
+      setStep(3);
+      updateStep3UI(currentOrder);
+      loadHistory();
     }
 
-    async function requestPayment() {
-      const btn = document.getElementById('payBtn');
-      btn.disabled = true;
-      btn.textContent = 'Sending...';
-      
-      try {
-        const res = await fetch(API_BASE + '/api/order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'request-payment', token: getToken(), orderId: currentOrderId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showMessage('Payment notification sent! We will verify and approve your order.', 'success');
-          loadCurrentOrder();
-          loadHistory();
-        } else {
-          showMessage(data.message, 'error');
-        }
-      } catch (err) {
-        showMessage('Failed to send request.', 'error');
-      }
-      btn.disabled = false;
-      btn.textContent = "I've Paid - Request Approval";
-    }
-
-    async function handleRequest() {
-      const btn = document.getElementById('requestBtn');
-      const code = document.getElementById('code').value.trim();
-      if (!code) {
-        showRequestResult('Please enter your verification code.', 'error');
-        return;
-      }
-      
-      btn.disabled = true;
-      btn.textContent = 'Processing...';
-      
-      try {
-        const res = await fetch(API_BASE + '/api/request', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: getToken(), code })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showRequestResult(`<strong>Success!</strong> <a href="${data.dropboxLink}" target="_blank" style="color: var(--success);">Click here to download your photo</a>`, 'success');
-          document.getElementById('code').value = '';
-          document.getElementById('step5Number').classList.add('completed');
-          loadHistory();
-        } else {
-          showRequestResult(data.message, 'error');
-        }
-      } catch (err) {
-        showRequestResult('An error occurred. Please try again.', 'error');
-      }
-      btn.disabled = false;
-      btn.textContent = 'Download Digital Photo';
-    }
-
+    // Step 3: History
     async function loadHistory() {
       try {
         const res = await fetch(API_BASE + '/api/order', {
@@ -675,27 +671,47 @@
         
         if (data.success && data.orders && data.orders.length > 0) {
           document.getElementById('historyTable').style.display = 'table';
-          document.getElementById('emptyHistory').style.display = 'none';
           const tbody = document.getElementById('historyBody');
           tbody.innerHTML = '';
+          
           data.orders.forEach(order => {
             const tr = document.createElement('tr');
-            const statusClass = order.status.replace(/_/g, '-');
             tr.innerHTML = `
               <td>${order.id.substring(0, 8)}...</td>
-              <td><span class="status-badge ${statusClass}">${order.status.replace(/_/g, ' ')}</span></td>
-              <td>${order.verification_code || '-'}</td>
+              <td><span class="status-badge ${order.status}">${order.status}</span></td>
+              <td>${order.country || '-'}</td>
               <td>${new Date(order.created_at).toLocaleDateString()}</td>
             `;
             tbody.appendChild(tr);
           });
         } else {
-          document.getElementById('historyTable').style.display = 'none';
           document.getElementById('emptyHistory').style.display = 'block';
         }
       } catch (err) {
         console.error('Failed to load history:', err);
       }
+    }
+
+    function startNewOrder() {
+      currentOrder = null;
+      setStep(1);
+      
+      // Reset form
+      document.getElementById('country').value = '';
+      document.getElementById('otherCountry').value = '';
+      document.getElementById('address').value = '';
+      document.getElementById('photoFile').value = '';
+      document.getElementById('fileName').style.display = 'none';
+      document.getElementById('uploadArea').classList.remove('has-file');
+      document.getElementById('step1Btn').disabled = true;
+      document.getElementById('otherCountryGroup').style.display = 'none';
+      
+      // Reset step 2
+      document.getElementById('paymentBtn').style.display = 'block';
+      document.getElementById('paymentBtn').disabled = false;
+      document.getElementById('paymentBtn').textContent = "I've Paid - Notify Admin";
+      document.getElementById('waitingNotice').style.display = 'none';
+      document.getElementById('step3BtnContainer').style.display = 'none';
     }
 
     function handleLogout() {
