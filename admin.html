@@ -60,6 +60,8 @@
     .btn-danger:hover { background: var(--error); color: white; }
     .btn-success { background: var(--success); color: white; }
     .btn-success:hover { background: #047857; }
+    .btn-whatsapp { background: #25D366; color: white; }
+    .btn-whatsapp:hover { background: #128C7E; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
     
@@ -325,6 +327,34 @@
     </div>
   </div>
   
+  <!-- Modal for WhatsApp Message -->
+  <div class="modal-overlay" id="whatsappModal">
+    <div class="modal">
+      <h3>💬 Send WhatsApp Message</h3>
+      <input type="hidden" id="waPhone">
+      <div class="form-group">
+        <label>To</label>
+        <p id="waRecipient" style="color: var(--text-muted);"></p>
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="waMessage" rows="4" placeholder="Type your message..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Quick Templates</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+          <button class="btn btn-secondary btn-sm" onclick="setWaTemplate('ready')">Order Ready</button>
+          <button class="btn btn-secondary btn-sm" onclick="setWaTemplate('payment')">Payment Reminder</button>
+          <button class="btn btn-secondary btn-sm" onclick="setWaTemplate('update')">Status Update</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeWhatsAppModal()">Cancel</button>
+        <button class="btn btn-whatsapp" onclick="sendWhatsApp()">Open WhatsApp</button>
+      </div>
+    </div>
+  </div>
+  
   <!-- Modal for Pickup Instructions -->
   <div class="modal-overlay" id="pickupModal">
     <div class="modal">
@@ -503,6 +533,11 @@
                   <button class="btn btn-primary btn-sm" onclick="openPickupModal('${order.id}', '${order.user_email}', \`${(order.pickup_instructions || '').replace(/`/g, '\\`')}\`)">
                     Edit Instructions
                   </button>
+                  ${order.phone ? `
+                    <button class="btn btn-whatsapp btn-sm" onclick="openWhatsAppModal('${order.phone}', '${order.user_email}')">
+                      💬 WhatsApp
+                    </button>
+                  ` : ''}
                   ${canSendEmail ? `
                     <button class="btn btn-success btn-sm" onclick="sendReadyEmail('${order.id}', '${order.user_email}')">
                       Send Ready Email
@@ -561,6 +596,50 @@
       } catch (err) {
         showMessage('Failed to save instructions.', 'error');
       }
+    }
+    
+    // WhatsApp Functions
+    function openWhatsAppModal(phone, email) {
+      document.getElementById('waPhone').value = phone;
+      document.getElementById('waRecipient').textContent = `${email} (${phone})`;
+      document.getElementById('waMessage').value = '';
+      document.getElementById('whatsappModal').classList.add('show');
+    }
+    
+    function closeWhatsAppModal() {
+      document.getElementById('whatsappModal').classList.remove('show');
+    }
+    
+    function setWaTemplate(type) {
+      const templates = {
+        ready: `Hi! 👋\n\nYour passport photos are ready for pickup!\n\nPlease visit us at your earliest convenience.\n\nThank you!`,
+        payment: `Hi! 👋\n\nThis is a friendly reminder about your photo order payment.\n\nPlease complete the payment via Zelle or Venmo to: 551-358-7475\n\nOnce done, click the "I've Paid" button on your dashboard.\n\nThank you!`,
+        update: `Hi! 👋\n\nJust wanted to give you an update on your photo order.\n\nYour order is being processed and will be ready soon.\n\nThank you for your patience!`
+      };
+      document.getElementById('waMessage').value = templates[type] || '';
+    }
+    
+    function sendWhatsApp() {
+      const phone = document.getElementById('waPhone').value.replace(/\D/g, ''); // Remove non-digits
+      const message = document.getElementById('waMessage').value;
+      
+      if (!message.trim()) {
+        showMessage('Please enter a message.', 'error');
+        return;
+      }
+      
+      // Format phone number - add country code if not present
+      let formattedPhone = phone;
+      if (phone.length === 10) {
+        formattedPhone = '1' + phone; // Add US country code
+      }
+      
+      // Open WhatsApp with pre-filled message
+      const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+      window.open(waUrl, '_blank');
+      
+      closeWhatsAppModal();
+      showMessage('WhatsApp opened! Send your message there.', 'success');
     }
     
     async function sendReadyEmail(orderId, userEmail) {
