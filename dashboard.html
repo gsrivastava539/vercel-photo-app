@@ -249,6 +249,14 @@
       .card { padding: 20px; }
       .step-progress::before { left: 30px; right: 30px; }
     }
+    
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 24px;
+    }
   </style>
 </head>
 <body>
@@ -399,9 +407,14 @@
         </button>
       </div>
     </div>
+    
+    <div class="footer">
+      © <span id="year"></span> Parallax Bay. All rights reserved.
+    </div>
   </div>
 
   <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
     const API_BASE = '';
     let currentOrder = null;
     let currentStep = 1;

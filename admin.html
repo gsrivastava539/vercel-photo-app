@@ -247,6 +247,14 @@
       th, td { padding: 10px 8px; font-size: 0.8rem; }
       .tabs { flex-direction: column; }
     }
+    
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 24px;
+    }
   </style>
 </head>
 <body>
@@ -325,6 +333,10 @@
         <div id="ordersEmpty" class="empty-state" style="display: none;">No orders found.</div>
       </div>
     </div>
+    
+    <div class="footer">
+      © <span id="year"></span> Parallax Bay. All rights reserved.
+    </div>
   </div>
   
   <!-- Modal for WhatsApp Message -->
@@ -377,6 +389,7 @@
 
   <script>
     const API_BASE = '';
+    document.getElementById('year').textContent = new Date().getFullYear();
     
     window.onload = function() {
       const token = localStorage.getItem('authToken');

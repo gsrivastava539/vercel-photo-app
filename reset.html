@@ -81,6 +81,16 @@
     .error-state p { color: var(--text-muted); margin-bottom: 20px; }
     .success-state { text-align: center; }
     .success-state h1 { color: var(--success); }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
   </style>
 </head>
 <body>
@@ -114,7 +124,13 @@
       <div class="link-text" style="margin-top: 24px;"><a href="/">Sign In Now</a></div>
     </div>
   </div>
+  
+  <div class="footer">
+    © <span id="year"></span> Parallax Bay. All rights reserved.
+  </div>
+  
   <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
     const API_BASE = '';
     function getTokenFromUrl() { const params = new URLSearchParams(window.location.search); return params.get('token'); }
     window.onload = function() { const token = getTokenFromUrl(); if (!token) { showError('No reset token provided.'); } };
