@@ -5,8 +5,7 @@
 
 const db = require('../lib/db');
 const authLib = require('../lib/auth');
-
-const DROPBOX_ACCESS_TOKEN = process.env.DROPBOX_ACCESS_TOKEN;
+const dropbox = require('../lib/dropbox');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -57,38 +56,13 @@ async function handleCreateCode(req, res) {
   
   // Create Dropbox folder
   const folderPath = `/PhotoRequests/${verificationCode}`;
-  
-  try {
-    await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: folderPath, autorename: false }),
-    });
-  } catch (e) {
-    console.error('Error creating folder:', e);
-  }
+  await dropbox.createFolder(folderPath);
   
   // Create shared link
   let sharedLink = '';
-  try {
-    const linkRes = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: folderPath, settings: { requested_visibility: 'public' } }),
-    });
-    
-    if (linkRes.ok) {
-      const linkData = await linkRes.json();
-      sharedLink = linkData.url;
-    }
-  } catch (e) {
-    console.error('Error creating link:', e);
+  const linkResult = await dropbox.createSharedLink(folderPath);
+  if (linkResult.success) {
+    sharedLink = linkResult.url;
   }
   
   await db.addNewCode(verificationCode, sharedLink);
@@ -113,17 +87,8 @@ async function handleClearAll(req, res) {
   let deletedFolders = 0;
   for (const code of codes) {
     if (code.validationCode) {
-      try {
-        await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ path: `/PhotoRequests/${code.validationCode}` }),
-        });
-        deletedFolders++;
-      } catch (e) {}
+      const result = await dropbox.deleteFolder(`/PhotoRequests/${code.validationCode}`);
+      if (result.success) deletedFolders++;
     }
   }
   

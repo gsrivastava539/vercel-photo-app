@@ -6,9 +6,8 @@
 
 const db = require('../lib/db');
 const authLib = require('../lib/auth');
+const dropbox = require('../lib/dropbox');
 const { Resend } = require('resend');
-
-const DROPBOX_ACCESS_TOKEN = process.env.DROPBOX_ACCESS_TOKEN;
 const ADMIN_EMAIL = 'studentone.qa@gmail.com';
 
 module.exports = async (req, res) => {
@@ -66,56 +65,24 @@ async function handleUpload(req, res, decoded) {
   }
   
   // Create folder
-  try {
-    await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: folderPath, autorename: false }),
-    });
-  } catch (e) {}
+  await dropbox.createFolder(folderPath);
   
   // Upload file
   const base64Data = fileData.split(',')[1];
   const fileBuffer = Buffer.from(base64Data, 'base64');
   const filePath = `${folderPath}/${Date.now()}_${fileName}`;
   
-  const uploadRes = await fetch('https://content.dropboxapi.com/2/files/upload', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`,
-      'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': JSON.stringify({ path: filePath, mode: 'add', autorename: true }),
-    },
-    body: fileBuffer,
-  });
-  
-  if (!uploadRes.ok) {
+  const uploadResult = await dropbox.uploadFile(fileBuffer, filePath);
+  if (!uploadResult.success) {
     return res.status(500).json({ success: false, message: 'Failed to upload photo.' });
   }
   
   // Get shared link
   let sharedLink = '';
-  try {
-    const linkRes = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: folderPath, settings: { requested_visibility: 'public' } }),
-    });
-    if (linkRes.ok) {
-      const linkData = await linkRes.json();
-      sharedLink = linkData.url;
-    } else {
-      const existingRes = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: folderPath, direct_only: true }),
-      });
-      if (existingRes.ok) {
-        const existingData = await existingRes.json();
-        if (existingData.links?.length > 0) sharedLink = existingData.links[0].url;
-      }
-    }
-  } catch (e) {}
+  const linkResult = await dropbox.createSharedLink(folderPath);
+  if (linkResult.success) {
+    sharedLink = linkResult.url;
+  }
   
   // Create order with country and address
   const supabase = db.getSupabase();
@@ -234,24 +201,14 @@ async function handleApprove(req, res) {
   
   // Create Dropbox folder
   const folderPath = `/PhotoRequests/${code}`;
-  try {
-    await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: folderPath }),
-    });
-  } catch (e) {}
+  await dropbox.createFolder(folderPath);
   
   // Get shared link
   let sharedLink = '';
-  try {
-    const linkRes = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DROPBOX_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: folderPath, settings: { requested_visibility: 'public' } }),
-    });
-    if (linkRes.ok) sharedLink = (await linkRes.json()).url;
-  } catch (e) {}
+  const linkResult = await dropbox.createSharedLink(folderPath);
+  if (linkResult.success) {
+    sharedLink = linkResult.url;
+  }
   
   // Save code
   await supabase.from('verification_codes').insert({ code, dropbox_link: sharedLink });
