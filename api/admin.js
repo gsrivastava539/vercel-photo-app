@@ -6,7 +6,8 @@
 const db = require('../lib/db');
 const authLib = require('../lib/auth');
 const dropbox = require('../lib/dropbox');
-const email = require('../lib/email');
+const emailService = require('../lib/email');
+const { Resend } = require('resend');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,6 +46,10 @@ module.exports = async (req, res) => {
         return await handleUserCount(req, res);
       case 'send-ready-email':
         return await handleSendReadyEmail(req, res);
+      case 'all-users':
+        return await handleGetAllUsers(req, res);
+      case 'send-email':
+        return await handleSendEmail(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -156,6 +161,68 @@ async function handleUserCount(req, res) {
   return res.status(200).json({ success: true, count: count || 0 });
 }
 
+async function handleGetAllUsers(req, res) {
+  const supabase = db.getSupabase();
+  
+  const { data: users, error } = await supabase
+    .from('accounts')
+    .select('email')
+    .order('email', { ascending: true });
+  
+  if (error) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch users.' });
+  }
+  
+  return res.status(200).json({ success: true, users: users || [] });
+}
+
+async function handleSendEmail(req, res) {
+  const { to, subject, body } = req.body;
+  
+  if (!to || !subject || !body) {
+    return res.status(400).json({ success: false, message: 'To, subject, and body are required.' });
+  }
+  
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    const { data, error } = await resend.emails.send({
+      from: 'Digital Photo <noreply@parallaxbay.com>',
+      to: [to],
+      subject: subject,
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <div style="white-space: pre-wrap; color: #1e293b; font-size: 16px; line-height: 1.6;">${body}</div>
+      
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+      
+      <p style="margin: 0; color: #64748b; font-size: 14px; text-align: center;">
+        Questions? Reach out on WhatsApp: <a href="https://wa.me/15513587475" style="color: #4f46e5;">551-358-7475</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+      `,
+    });
+    
+    if (error) {
+      console.error('Resend error:', error);
+      return res.status(500).json({ success: false, message: 'Failed to send email: ' + error.message });
+    }
+    
+    return res.status(200).json({ success: true, message: 'Email sent successfully!' });
+  } catch (err) {
+    console.error('Email send error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to send email.' });
+  }
+}
+
 async function handleSendReadyEmail(req, res) {
   const { orderId } = req.body;
   
@@ -178,7 +245,7 @@ async function handleSendReadyEmail(req, res) {
   }
   
   // Send email
-  const result = await email.sendReadyForPickupEmail(
+  const result = await emailService.sendReadyForPickupEmail(
     order.user_email,
     order.pickup_instructions,
     { country: order.country }

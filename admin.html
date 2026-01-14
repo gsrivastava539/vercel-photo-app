@@ -196,6 +196,48 @@
     .modal textarea:focus { outline: none; border-color: var(--primary); }
     .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
     
+    /* Form elements */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; color: var(--text); }
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    .form-group input:focus { outline: none; border-color: var(--primary); }
+    
+    /* Autocomplete */
+    .autocomplete-wrapper { position: relative; }
+    .autocomplete-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .autocomplete-dropdown.show { display: block; }
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: var(--tab-bg); }
+    .autocomplete-item .email { color: var(--text); }
+    .autocomplete-item .phone { color: var(--text-muted); font-size: 0.8rem; }
+    
     @media (max-width: 768px) {
       .container { padding: 16px; }
       header { flex-direction: column; gap: 12px; align-items: flex-start; }
@@ -228,6 +270,32 @@
           <p style="font-size: 1.75rem; font-weight: 700; color: var(--primary);" id="userCount">-</p>
         </div>
       </div>
+    </div>
+    
+    <!-- Quick Email Section -->
+    <div class="card" style="margin-bottom: 24px;">
+      <h2>📧 Quick Email</h2>
+      <p class="subtitle">Send a quick email to any registered user.</p>
+      
+      <div class="form-group">
+        <label for="emailTo">To</label>
+        <div class="autocomplete-wrapper">
+          <input type="text" id="emailTo" placeholder="Start typing user email..." autocomplete="off" oninput="handleEmailSearch(this.value)">
+          <div class="autocomplete-dropdown" id="emailDropdown"></div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="emailSubject">Subject</label>
+        <input type="text" id="emailSubject" placeholder="Enter email subject...">
+      </div>
+      
+      <div class="form-group">
+        <label for="emailBody">Message</label>
+        <textarea id="emailBody" rows="4" placeholder="Enter your message..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+      </div>
+      
+      <button class="btn btn-primary" onclick="sendQuickEmail()" id="sendEmailBtn">Send Email</button>
     </div>
     
     <!-- User Orders Section -->
@@ -286,6 +354,8 @@
       verifyAdmin(token);
     };
     
+    let allUserEmails = []; // Store user emails for autocomplete
+    
     async function verifyAdmin(token) {
       try {
         const res = await fetch(API_BASE + '/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'verify', token }) });
@@ -293,7 +363,107 @@
         if (!data.valid || !data.isAdmin) { window.location.href = '/'; return; }
         loadOrders();
         loadUserCount();
+        loadUserEmails(); // Load emails for autocomplete
       } catch (err) { console.error('Admin verification failed:', err); window.location.href = '/'; }
+    }
+    
+    async function loadUserEmails() {
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'all-users', token: getToken() })
+        });
+        const data = await res.json();
+        if (data.success) {
+          allUserEmails = data.users || [];
+        }
+      } catch (err) {
+        console.error('Failed to load user emails:', err);
+      }
+    }
+    
+    function handleEmailSearch(query) {
+      const dropdown = document.getElementById('emailDropdown');
+      
+      if (!query || query.length < 1) {
+        dropdown.classList.remove('show');
+        return;
+      }
+      
+      const matches = allUserEmails.filter(user => 
+        user.email.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 10);
+      
+      if (matches.length === 0) {
+        dropdown.classList.remove('show');
+        return;
+      }
+      
+      dropdown.innerHTML = matches.map(user => `
+        <div class="autocomplete-item" onclick="selectEmail('${user.email}')">
+          <div class="email">${user.email}</div>
+        </div>
+      `).join('');
+      
+      dropdown.classList.add('show');
+    }
+    
+    function selectEmail(email) {
+      document.getElementById('emailTo').value = email;
+      document.getElementById('emailDropdown').classList.remove('show');
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.autocomplete-wrapper')) {
+        document.getElementById('emailDropdown').classList.remove('show');
+      }
+    });
+    
+    async function sendQuickEmail() {
+      const to = document.getElementById('emailTo').value.trim();
+      const subject = document.getElementById('emailSubject').value.trim();
+      const body = document.getElementById('emailBody').value.trim();
+      
+      if (!to || !subject || !body) {
+        showMessage('Please fill in all fields.', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('sendEmailBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send-email',
+            token: getToken(),
+            to: to,
+            subject: subject,
+            body: body
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('Email sent successfully!', 'success');
+          // Clear form
+          document.getElementById('emailTo').value = '';
+          document.getElementById('emailSubject').value = '';
+          document.getElementById('emailBody').value = '';
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Failed to send email.', 'error');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Send Email';
     }
     
     function getToken() { return localStorage.getItem('authToken'); }
