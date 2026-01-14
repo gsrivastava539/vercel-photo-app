@@ -197,28 +197,10 @@ async function handleApprove(req, res) {
     return sendHtml(res, 'Already Approved', 'This order was already approved.', true);
   }
   
-  // Generate code
-  const { data: existingCodes } = await supabase.from('verification_codes').select('code');
-  const usedCodes = (existingCodes || []).map(c => c.code);
-  let code;
-  do { code = Math.floor(100000 + Math.random() * 900000).toString(); } while (usedCodes.includes(code));
+  // Update order status to approved
+  await supabase.from('orders').update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', orderId);
   
-  // Create Dropbox folder
-  const folderPath = `/PhotoRequests/${code}`;
-  await dropbox.createFolder(folderPath);
-  
-  // Get shared link
-  let sharedLink = '';
-  const linkResult = await dropbox.createSharedLink(folderPath);
-  if (linkResult.success) {
-    sharedLink = linkResult.url;
-  }
-  
-  // Save code
-  await supabase.from('verification_codes').insert({ code, dropbox_link: sharedLink });
-  await supabase.from('orders').update({ status: 'approved', verification_code: code, approved_at: new Date().toISOString() }).eq('id', orderId);
-  
-  // Email user
+  // Send simple approval email to user
   const resend = new Resend(process.env.RESEND_API_KEY);
   const protocol = req.headers['x-forwarded-proto'] || 'https';
   const host = req.headers['host'];
@@ -226,15 +208,49 @@ async function handleApprove(req, res) {
   await resend.emails.send({
     from: 'Digital Photo <noreply@parallaxbay.com>',
     to: [order.user_email],
-    subject: 'Your Verification Code',
+    subject: 'Payment Approved - Digital Photo',
     html: `
-      <h2>Payment Approved!</h2>
-      <p>Your verification code is: <strong style="font-size:24px;letter-spacing:4px;">${code}</strong></p>
-      <p><a href="${protocol}://${host}/dashboard">Go to Dashboard</a></p>
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+        <h1 style="color: #059669; margin: 0; font-size: 24px;">Payment Approved!</h1>
+      </div>
+      
+      <p style="margin: 0 0 16px;">Hi there,</p>
+      
+      <p style="margin: 0 0 24px;">Great news! Your payment has been approved by the admin. We are now processing your photo order.</p>
+      
+      <div style="background: #f0fdf4; border-left: 4px solid #059669; padding: 16px; border-radius: 0 8px 8px 0; margin: 24px 0;">
+        <p style="margin: 0; color: #166534;"><strong>What's Next?</strong></p>
+        <p style="margin: 8px 0 0; color: #166534;">Please check back on your dashboard for pickup instructions and updates.</p>
+      </div>
+      
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${protocol}://${host}/dashboard" 
+           style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); 
+                  color: white; padding: 16px 40px; text-decoration: none; 
+                  border-radius: 10px; font-weight: 600; font-size: 16px;">
+          Go to Dashboard
+        </a>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+      
+      <p style="margin: 0; color: #64748b; font-size: 14px; text-align: center;">
+        Questions? Reach out on WhatsApp: <a href="https://wa.me/15513587475" style="color: #4f46e5;">551-358-7475</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
     `,
   });
   
-  return sendHtml(res, 'Approved!', `Code <strong>${code}</strong> sent to ${order.user_email}.<br><br>Upload processed photos to: <a href="${sharedLink}">${folderPath}</a>`, true);
+  return sendHtml(res, 'Approved!', `Payment approved for <strong>${order.user_email}</strong>.<br><br>User has been notified via email.<br><br>Next: Set pickup instructions in the admin panel.`, true);
 }
 
 function sendHtml(res, title, msg, success) {
