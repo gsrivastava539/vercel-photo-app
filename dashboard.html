@@ -339,7 +339,7 @@
         <div class="status-box" id="step2Status">
           <h4>Your Order</h4>
           <p>Status: <span class="status-badge" id="orderStatus">PENDING</span></p>
-          <p id="orderFolderP" style="display: none;">Your Photos: <a href="#" target="_blank" id="orderFolderLink" style="color: var(--primary);">View Uploaded Photos</a></p>
+          <p style="color: var(--success); font-size: 0.9rem;">✓ Your photo has been uploaded and is being processed.</p>
         </div>
         
         <button class="btn btn-primary" id="paymentBtn" onclick="submitPayment()">
@@ -369,7 +369,8 @@
         <div class="status-box">
           <h4>Order Details</h4>
           <p>Status: <span class="status-badge approved">APPROVED</span></p>
-          <p id="finalFolderP">Your Photos: <a href="#" target="_blank" id="finalFolderLink" style="color: var(--primary);">View Photos</a></p>
+          <p id="finalFolderP" style="display: none;">📁 Your Final Photos: <a href="#" target="_blank" id="finalFolderLink" style="color: var(--primary); font-weight: 500;">View & Download Photos</a></p>
+          <p id="noPhotosYet" style="color: var(--text-muted); font-size: 0.9rem;">Your edited photos will be available here once ready.</p>
         </div>
         
         <div class="pickup-box">
@@ -492,10 +493,7 @@
       document.getElementById('orderStatus').textContent = order.status.toUpperCase();
       document.getElementById('orderStatus').className = 'status-badge ' + order.status;
       
-      if (order.dropbox_link) {
-        document.getElementById('orderFolderP').style.display = 'block';
-        document.getElementById('orderFolderLink').href = order.dropbox_link;
-      }
+      // Don't show Dropbox link until approved (security: admin may upload edited photos there)
       
       if (order.status === 'approved') {
         document.getElementById('paymentBtn').style.display = 'none';
@@ -505,8 +503,14 @@
     }
 
     function updateStep3UI(order) {
+      // Only show the photos link if admin has set it (after uploading edited photos)
       if (order.dropbox_link) {
+        document.getElementById('finalFolderP').style.display = 'block';
         document.getElementById('finalFolderLink').href = order.dropbox_link;
+        document.getElementById('noPhotosYet').style.display = 'none';
+      } else {
+        document.getElementById('finalFolderP').style.display = 'none';
+        document.getElementById('noPhotosYet').style.display = 'block';
       }
       
       if (order.pickup_instructions) {
