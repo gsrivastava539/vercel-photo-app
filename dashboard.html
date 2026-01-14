@@ -549,12 +549,45 @@
     function handleFileSelect(e) {
       const file = e.target.files[0];
       if (file) {
-        if (file.size > 5 * 1024 * 1024) { showMessage('File too large. Max 5MB.', 'error'); return; }
-        document.getElementById('fileName').textContent = file.name;
+        if (file.size > 10 * 1024 * 1024) { showMessage('File too large. Max 10MB.', 'error'); return; }
+        document.getElementById('fileName').textContent = file.name + ' (will be compressed)';
         document.getElementById('fileName').style.display = 'block';
         document.getElementById('uploadArea').classList.add('has-file');
         validateStep1();
       }
+    }
+    
+    // Compress image before upload to avoid 413 errors
+    async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // Scale down if too large
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert to compressed JPEG
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressedDataUrl);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
     function validateStep1() {
@@ -581,41 +614,44 @@
       const finalCountry = country === 'Other' ? otherCountry.trim() : country;
       
       btn.disabled = true;
-      btn.textContent = 'Uploading...';
+      btn.textContent = 'Compressing...';
       
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        try {
-          const res = await fetch(API_BASE + '/api/order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'upload',
-              token: getToken(),
-              fileName: file.name,
-              fileData: e.target.result,
-              country: finalCountry,
-              phone: phone,
-              address: address
-            })
-          });
-          const data = await res.json();
-          
-          if (data.success) {
-            currentOrder = data.order;
-            showMessage('Photo uploaded successfully!', 'success');
-            setStep(2);
-            updateStep2UI(data.order);
-          } else {
-            showMessage(data.message, 'error');
-          }
-        } catch (err) {
-          showMessage('Upload failed. Please try again.', 'error');
+      try {
+        // Compress image to avoid 413 errors (Vercel has ~4.5MB limit)
+        const compressedData = await compressImage(file, 1200, 0.8);
+        
+        btn.textContent = 'Uploading...';
+        
+        const res = await fetch(API_BASE + '/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'upload',
+            token: getToken(),
+            fileName: file.name.replace(/\.[^/.]+$/, '') + '.jpg', // Change extension to jpg
+            fileData: compressedData,
+            country: finalCountry,
+            phone: phone,
+            address: address
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          currentOrder = data.order;
+          showMessage('Photo uploaded successfully!', 'success');
+          setStep(2);
+          updateStep2UI(data.order);
+        } else {
+          showMessage(data.message || 'Upload failed.', 'error');
         }
-        btn.disabled = false;
-        btn.textContent = 'Continue to Payment';
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Upload error:', err);
+        showMessage('Upload failed. Please try again.', 'error');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Continue to Payment';
     }
 
     // Step 2: Payment
