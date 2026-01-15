@@ -458,10 +458,6 @@
     let currentStep = 1;
 
     window.onload = function() {
-      // Login is temporarily disabled - redirect to home
-      window.location.href = '/';
-      return;
-      
       const token = localStorage.getItem('authToken');
       const email = localStorage.getItem('userEmail');
       if (!token || !email) { window.location.href = '/'; return; }
