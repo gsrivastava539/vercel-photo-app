@@ -393,6 +393,10 @@
     document.getElementById('year').textContent = new Date().getFullYear();
     
     window.onload = function() {
+      // Login is temporarily disabled - redirect to home
+      window.location.href = '/';
+      return;
+      
       const token = localStorage.getItem('authToken');
       if (!token) { window.location.href = '/'; return; }
       verifyAdmin(token);
