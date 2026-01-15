@@ -575,95 +575,81 @@
       const btn = document.getElementById('processBtn');
       btn.disabled = true;
       btn.innerHTML = '<span class="loading-spinner"></span>Processing...';
-      showStatus('Sending to AI processor... This may take 10-30 seconds.', 'processing');
+      showStatus('Waking up AI processor... This may take 30-60 seconds on first use.', 'processing');
 
       try {
         // Convert file to base64
         const base64 = await fileToBase64(selectedFile);
 
-        // For Gradio 4.x, we need to use the /call endpoint with proper format
-        // Step 1: Submit the job
-        const submitResponse = await fetch(`${HF_SPACE_URL}/call/process_photo`, {
+        // Gradio 4.x API - use /api/predict with fn_index
+        const apiData = {
+          data: [
+            base64,  // Send full data URL
+            document.getElementById('removeBg').checked,
+            document.getElementById('photoSize').value,
+            parseInt(document.getElementById('customWidth').value),
+            parseInt(document.getElementById('customHeight').value),
+            document.getElementById('borderColor').value,
+            parseInt(document.getElementById('borderWidth').value),
+            document.getElementById('outputFormat').value
+          ],
+          fn_index: 0  // First function (process_photo)
+        };
+        
+        // Try the /api/predict endpoint first
+        let response = await fetch(`${HF_SPACE_URL}/api/predict/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            data: [
-              base64,  // Send full data URL
-              document.getElementById('removeBg').checked,
-              document.getElementById('photoSize').value,
-              parseInt(document.getElementById('customWidth').value),
-              parseInt(document.getElementById('customHeight').value),
-              document.getElementById('borderColor').value,
-              parseInt(document.getElementById('borderWidth').value),
-              document.getElementById('outputFormat').value
-            ]
-          })
+          body: JSON.stringify(apiData)
         });
-
-        if (!submitResponse.ok) {
-          // Try the legacy /run endpoint as fallback
-          const legacyResponse = await fetch(`${HF_SPACE_URL}/run/process_photo`, {
+        
+        // If that fails, try without trailing slash
+        if (!response.ok) {
+          response = await fetch(`${HF_SPACE_URL}/api/predict`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              data: [
-                base64,
-                document.getElementById('removeBg').checked,
-                document.getElementById('photoSize').value,
-                parseInt(document.getElementById('customWidth').value),
-                parseInt(document.getElementById('customHeight').value),
-                document.getElementById('borderColor').value,
-                parseInt(document.getElementById('borderWidth').value),
-                document.getElementById('outputFormat').value
-              ]
-            })
+            body: JSON.stringify(apiData)
           });
-          
-          if (!legacyResponse.ok) {
-            throw new Error(`HTTP error! status: ${legacyResponse.status}`);
-          }
-          
-          const legacyResult = await legacyResponse.json();
-          handleResult(legacyResult.data);
-          return;
+        }
+        
+        // If still failing, try the /run endpoint
+        if (!response.ok) {
+          response = await fetch(`${HF_SPACE_URL}/run/predict`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ data: apiData.data })
+          });
         }
 
-        const submitResult = await submitResponse.json();
-        const eventId = submitResult.event_id;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Response:', response.status, errorText);
+          throw new Error(`API error: ${response.status}. Space may be sleeping - try again in 30 seconds.`);
+        }
 
-        // Step 2: Get the result using SSE
         showStatus('Processing image... This may take 15-30 seconds.', 'processing');
         
-        const resultResponse = await fetch(`${HF_SPACE_URL}/call/process_photo/${eventId}`);
-        const resultText = await resultResponse.text();
+        const result = await response.json();
+        console.log('API Result:', result);
         
-        // Parse SSE response - look for data: lines
-        const lines = resultText.split('\n');
-        let resultData = null;
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              resultData = JSON.parse(line.substring(6));
-            } catch (e) {
-              // Continue looking
-            }
-          }
-        }
-        
-        if (resultData) {
-          handleResult(resultData);
+        // Handle response - could be in data array or directly
+        if (result.data) {
+          handleResult(result.data);
+        } else if (result.error) {
+          throw new Error(result.error);
         } else {
-          throw new Error('No valid response received from processor');
+          throw new Error('Unexpected response format');
         }
 
       } catch (error) {
         console.error('Processing error:', error);
-        showStatus(`Error: ${error.message}. Make sure your Hugging Face Space is running and awake.`, 'error');
+        showStatus(`Error: ${error.message}`, 'error');
       } finally {
         btn.disabled = false;
         btn.innerHTML = '🚀 Process Photo';
