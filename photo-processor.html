@@ -274,13 +274,19 @@
           return;
         }
         
-        isAdmin = data.isAdmin;
-        if (isAdmin) {
-          document.getElementById('backLink').href = '/admin';
-          document.getElementById('backLink').textContent = '← Back to Admin';
+        // Admin-only access - redirect non-admins to dashboard
+        if (!data.isAdmin) {
+          alert('This feature is only available to administrators.');
+          window.location.href = '/dashboard';
+          return;
         }
+        
+        isAdmin = data.isAdmin;
+        document.getElementById('backLink').href = '/admin';
+        document.getElementById('backLink').textContent = '← Back to Admin';
       } catch (err) {
         console.error('Session verification failed:', err);
+        window.location.href = '/';
       }
     }
     
