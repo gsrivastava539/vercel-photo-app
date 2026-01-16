@@ -242,6 +242,32 @@
             <a href="#" onclick="showTab('login'); return false;">Back to Sign In</a>
           </div>
         </div>
+        
+        <!-- Verification Code Panel -->
+        <div id="codePanel" class="panel">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 48px; margin-bottom: 12px;">📧</div>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">We've sent a verification code to:</p>
+            <p id="codeEmail" style="font-weight: 600; color: var(--primary); margin-top: 4px;"></p>
+          </div>
+          <form id="codeForm" onsubmit="handleVerifyCode(event)">
+            <div class="form-group">
+              <label>Enter 6-Digit Code</label>
+              <input type="text" id="verificationCode" placeholder="000000" maxlength="6" pattern="[0-9]{6}" 
+                     style="text-align: center; font-size: 1.5rem; letter-spacing: 8px; font-family: 'Courier New', monospace;" required>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                Code expires in 10 minutes
+              </p>
+            </div>
+            <button type="submit" id="codeBtn">Verify Code</button>
+          </form>
+          <div class="link-text" style="margin-top: 20px;">
+            <a href="#" onclick="resendCode(); return false;">Didn't receive code? Resend</a>
+          </div>
+          <div class="link-text">
+            <a href="#" onclick="showTab('login'); return false;">← Back to Sign In</a>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -345,6 +371,10 @@
       }
     }
     
+    // Store email and admin status for code verification
+    let pendingLoginEmail = '';
+    let pendingIsAdmin = false;
+    
     async function handleLogin(e) {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
@@ -364,13 +394,21 @@
         const data = await res.json();
         
         if (data.success) {
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('userEmail', data.email);
-          
-          if (data.isAdmin) {
-            window.location.href = '/admin';
-          } else {
-            window.location.href = '/dashboard';
+          if (data.requiresCode) {
+            // Show verification code panel
+            pendingLoginEmail = data.email;
+            pendingIsAdmin = data.isAdmin;
+            showCodePanel(data.email);
+          } else if (data.token) {
+            // Direct login (shouldn't happen with new flow, but kept for safety)
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('userEmail', data.email);
+            
+            if (data.isAdmin) {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/dashboard';
+            }
           }
         } else {
           if (data.needsVerification) {
@@ -387,6 +425,71 @@
       
       btn.disabled = false;
       btn.textContent = 'Sign In';
+    }
+    
+    function showCodePanel(email) {
+      // Hide all panels and show code panel
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('codePanel').classList.add('active');
+      document.getElementById('codeEmail').textContent = email;
+      document.getElementById('verificationCode').value = '';
+      document.getElementById('verificationCode').focus();
+      showMessage('✓ Verification code sent! Check your email.', 'success');
+    }
+    
+    async function handleVerifyCode(e) {
+      e.preventDefault();
+      const btn = document.getElementById('codeBtn');
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      
+      try {
+        const code = document.getElementById('verificationCode').value.trim();
+        
+        const res = await fetch(API_BASE + '/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'verify-login-code', email: pendingLoginEmail, code })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userEmail', data.email);
+          
+          showMessage('✓ Login successful! Redirecting...', 'success');
+          
+          setTimeout(() => {
+            if (data.isAdmin) {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/dashboard';
+            }
+          }, 500);
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('An error occurred. Please try again.', 'error');
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Verify Code';
+    }
+    
+    async function resendCode() {
+      if (!pendingLoginEmail) {
+        showTab('login');
+        return;
+      }
+      
+      showMessage('To resend the code, please sign in again.', 'info');
+      setTimeout(() => {
+        showTab('login');
+        document.getElementById('loginEmail').value = pendingLoginEmail;
+      }, 1500);
     }
     
     async function handleSignup(e) {

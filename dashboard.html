@@ -741,8 +741,8 @@
       }
       
       // Build Google Maps search URL (free, no API key needed)
-      const searchQuery = `${storeType.value} near ${zipCode}`;
-      const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+      const searchQuery = `${storeType.value} pharmacy near ${zipCode}, USA`;
+      const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(searchQuery)}&z=14&output=embed`;
       
       // Show the map container and load the map
       const mapContainer = document.getElementById('mapContainer');

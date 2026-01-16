@@ -23,6 +23,8 @@ module.exports = async (req, res) => {
         return await handleSignup(req, res);
       case 'login':
         return await handleLogin(req, res);
+      case 'verify-login-code':
+        return await handleVerifyLoginCode(req, res);
       case 'forgot':
         return await handleForgot(req, res);
       case 'reset':
@@ -189,6 +191,68 @@ async function handleLogin(req, res) {
     }
   }
   
+  // Generate and send login verification code
+  const loginCode = await db.setLoginCode(fullEmail);
+  
+  // Send verification code email
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: 'Digital Photo <noreply@parallaxbay.com>',
+      to: [fullEmail],
+      subject: `🔐 Your Login Code: ${loginCode}`,
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <h2 style="color: #4f46e5; margin: 0 0 20px; text-align: center;">🔐 Login Verification</h2>
+      <p style="color: #64748b; margin-bottom: 24px; text-align: center;">Enter this code to complete your sign in:</p>
+      <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+        <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: white; font-family: 'Courier New', monospace;">${loginCode}</span>
+      </div>
+      <p style="color: #94a3b8; font-size: 14px; margin-top: 24px; text-align: center;">This code will expire in 10 minutes.</p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+      <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">If you didn't attempt to log in, please ignore this email and consider changing your password.</p>
+    </div>
+  </div>
+</body>
+</html>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send login code email:', emailError);
+    return res.status(500).json({ success: false, message: 'Failed to send verification code. Please try again.' });
+  }
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Verification code sent to your email.',
+    email: fullEmail,
+    requiresCode: true,
+    isAdmin: isAdmin,
+  });
+}
+
+async function handleVerifyLoginCode(req, res) {
+  const { email, code } = req.body;
+  
+  if (!email || !code) {
+    return res.status(400).json({ success: false, message: 'Email and verification code are required.' });
+  }
+  
+  const fullEmail = email.toLowerCase().trim();
+  
+  // Verify the login code
+  const result = await db.verifyLoginCode(fullEmail, code);
+  
+  if (!result.success) {
+    return res.status(401).json({ success: false, message: result.message });
+  }
+  
+  // Code verified! Generate and return the token
+  const isAdmin = await db.isAdmin(fullEmail);
   const token = authLib.generateToken({ email: fullEmail, isAdmin: isAdmin });
   
   return res.status(200).json({
