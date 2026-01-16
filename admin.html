@@ -598,7 +598,7 @@
               <td style="font-size: 0.85rem; color: var(--text-muted);">${createdAt}</td>
               <td>
                 <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')" ${!user.email_verified ? 'disabled title="User must verify email first"' : ''}>
+                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')">
                     Approve
                   </button>
                   <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.email}')">
