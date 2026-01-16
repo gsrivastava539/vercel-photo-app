@@ -511,17 +511,11 @@
               month: 'short', day: 'numeric', year: 'numeric'
             });
             
-            tr.innerHTML = \`
-              <td><strong>\${user.email}</strong></td>
-              <td>\${statusBadge}</td>
-              <td>\${verifiedBadge}</td>
-              <td style="font-size: 0.85rem; color: var(--text-muted);">\${createdAt}</td>
-              <td>
-                <button class="btn btn-danger btn-sm" onclick="deleteUser('\${user.email}')">
-                  Delete
-                </button>
-              </td>
-            \`;
+            tr.innerHTML = '<td><strong>' + user.email + '</strong></td>' +
+              '<td>' + statusBadge + '</td>' +
+              '<td>' + verifiedBadge + '</td>' +
+              '<td style="font-size: 0.85rem; color: var(--text-muted);">' + createdAt + '</td>' +
+              '<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\'' + user.email + '\')">Delete</button></td>';
             tbody.appendChild(tr);
           });
         } else {
@@ -536,7 +530,7 @@
     }
     
     async function deleteUser(email) {
-      if (!confirm(\`⚠️ DELETE USER: \${email}\\n\\nThis will permanently delete this account and all their orders.\\n\\nAre you sure?\`)) return;
+      if (!confirm('⚠️ DELETE USER: ' + email + '\n\nThis will permanently delete this account and all their orders.\n\nAre you sure?')) return;
       
       try {
         const res = await fetch(API_BASE + '/api/admin', {
@@ -814,7 +808,7 @@
               <td style="max-width: 200px; white-space: pre-wrap; word-break: break-word;">${order.pickup_instructions || '<em style="color: var(--text-muted);">Not set</em>'}</td>
               <td>
                 <div style="display: flex; flex-direction: column; gap: 6px;">
-                  <button class="btn btn-primary btn-sm" onclick="openPickupModal('${order.id}', '${order.user_email}', \`${(order.pickup_instructions || '').replace(/`/g, '\\`')}\`)">
+                  <button class="btn btn-primary btn-sm" onclick="openPickupModal('${order.id}', '${order.user_email}', '${(order.pickup_instructions || '').replace(/'/g, "\\'")}')">
                     Edit Instructions
                   </button>
                   ${order.phone ? `
