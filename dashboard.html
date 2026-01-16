@@ -402,36 +402,59 @@
                 <span>Walgreens</span>
               </label>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="findNearestStore()" style="margin-top: 12px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="searchStoreBtn" onclick="findNearestStore()" style="margin-top: 12px;">
               Search Stores Near Me
             </button>
           </div>
           
-          <!-- Inline Map Container -->
-          <div id="mapContainer" style="display: none; margin-top: 16px;">
-            <div style="background: var(--step-bg); border-radius: 10px; padding: 12px;">
-              <p style="font-size: 0.9rem; color: var(--text); margin-bottom: 12px;">
-                <strong>Stores near your ZIP code:</strong> Browse the map below and select your preferred pickup location.
-              </p>
-              <iframe 
-                id="storeMap"
-                width="100%" 
-                height="350" 
-                style="border: none; border-radius: 8px;"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                allowfullscreen>
-              </iframe>
-              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
-                Click on a store marker to see its address, then copy the address below.
-              </p>
+          <!-- Store Results Container -->
+          <div id="storeResultsContainer" style="display: none; margin-top: 16px;">
+            <div style="background: var(--step-bg); border-radius: 10px; padding: 16px;">
+              <label style="font-weight: 500; margin-bottom: 8px; display: block;">Select a Store <span class="required">*</span></label>
+              <select id="storeDropdown" onchange="handleStoreSelect()">
+                <option value="">-- Select your pickup location --</option>
+              </select>
+              <p id="storeCount" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;"></p>
+              
+              <!-- Map Reference (collapsible) -->
+              <details style="margin-top: 16px;">
+                <summary style="cursor: pointer; color: var(--primary); font-size: 0.9rem; font-weight: 500;">
+                  View Map for Reference
+                </summary>
+                <div style="margin-top: 12px;">
+                  <iframe 
+                    id="storeMap"
+                    width="100%" 
+                    height="250" 
+                    style="border: none; border-radius: 8px;"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    allowfullscreen>
+                  </iframe>
+                </div>
+              </details>
+            </div>
+          </div>
+          
+          <!-- Loading indicator -->
+          <div id="storeLoading" style="display: none; margin-top: 16px; text-align: center; padding: 20px;">
+            <p style="color: var(--text-muted);">Searching for stores near you...</p>
+          </div>
+          
+          <!-- No results message -->
+          <div id="noStoresFound" style="display: none; margin-top: 16px;">
+            <div style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.15); border-radius: 10px; padding: 16px;">
+              <p style="color: var(--error); font-size: 0.9rem;">No stores found in your area. Please try a different ZIP code or enter your pickup location manually below.</p>
             </div>
           </div>
         </div>
         
         <div class="form-group">
           <label>Selected Pickup Location <span class="required">*</span></label>
-          <textarea id="pickupLocation" placeholder="Enter your selected store address from the map above (e.g., CVS at 123 Main St, Edison, NJ 08817)" oninput="validateStep1()"></textarea>
+          <textarea id="pickupLocation" placeholder="Select a store from the dropdown above, or enter your preferred store address manually" oninput="validateStep1()" readonly></textarea>
+          <p class="helper-text" id="manualEntryHint" style="display: none;">
+            <a href="#" onclick="enableManualEntry(); return false;" style="color: var(--primary);">Can't find your store? Click here to enter manually</a>
+          </p>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
@@ -724,7 +747,7 @@
       document.getElementById('step1Btn').disabled = !valid;
     }
     
-    function findNearestStore() {
+    async function findNearestStore() {
       const zipCode = document.getElementById('zipCode').value.trim();
       const storeType = document.querySelector('input[name="storeType"]:checked');
       
@@ -738,19 +761,160 @@
         return;
       }
       
-      // Build Google Maps search URL (free, no API key needed)
-      const searchQuery = `${storeType.value} near ${zipCode}`;
-      const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+      const storeName = storeType.value;
+      const btn = document.getElementById('searchStoreBtn');
+      const loading = document.getElementById('storeLoading');
+      const resultsContainer = document.getElementById('storeResultsContainer');
+      const noResults = document.getElementById('noStoresFound');
+      const dropdown = document.getElementById('storeDropdown');
+      const storeCount = document.getElementById('storeCount');
+      const manualHint = document.getElementById('manualEntryHint');
       
-      // Show the map container and load the map
-      const mapContainer = document.getElementById('mapContainer');
-      const storeMap = document.getElementById('storeMap');
+      // Reset previous results
+      resultsContainer.style.display = 'none';
+      noResults.style.display = 'none';
+      dropdown.innerHTML = '<option value="">-- Select your pickup location --</option>';
+      document.getElementById('pickupLocation').value = '';
+      document.getElementById('pickupLocation').readOnly = true;
       
-      storeMap.src = mapUrl;
-      mapContainer.style.display = 'block';
+      // Show loading
+      btn.disabled = true;
+      btn.textContent = 'Searching...';
+      loading.style.display = 'block';
       
-      // Scroll to the map
-      mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try {
+        // Step 1: Geocode ZIP code using Nominatim (free)
+        const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(zipCode)}&country=USA&format=json&limit=1`, {
+          headers: { 'User-Agent': 'PassportPhotoApp/1.0' }
+        });
+        const geoData = await geoResponse.json();
+        
+        if (!geoData || geoData.length === 0) {
+          throw new Error('ZIP code not found');
+        }
+        
+        const lat = parseFloat(geoData[0].lat);
+        const lon = parseFloat(geoData[0].lon);
+        
+        // Step 2: Query Overpass API for stores (free)
+        const radius = 16000; // 10 miles in meters
+        const overpassQuery = `
+          [out:json][timeout:25];
+          (
+            node["brand"~"${storeName}",i]["shop"="chemist"](around:${radius},${lat},${lon});
+            node["brand"~"${storeName}",i]["amenity"="pharmacy"](around:${radius},${lat},${lon});
+            node["name"~"${storeName}",i]["shop"="chemist"](around:${radius},${lat},${lon});
+            node["name"~"${storeName}",i]["amenity"="pharmacy"](around:${radius},${lat},${lon});
+          );
+          out body;
+        `;
+        
+        const overpassResponse = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: overpassQuery
+        });
+        const overpassData = await overpassResponse.json();
+        
+        loading.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'Search Stores Near Me';
+        
+        if (overpassData.elements && overpassData.elements.length > 0) {
+          // Sort by distance
+          const stores = overpassData.elements.map(store => {
+            const distance = calculateDistance(lat, lon, store.lat, store.lon);
+            const tags = store.tags || {};
+            const address = formatAddress(tags);
+            return {
+              name: tags.name || storeName,
+              address: address,
+              distance: distance,
+              lat: store.lat,
+              lon: store.lon
+            };
+          }).sort((a, b) => a.distance - b.distance).slice(0, 15); // Limit to 15 closest
+          
+          // Populate dropdown
+          stores.forEach((store, index) => {
+            const option = document.createElement('option');
+            const distanceMiles = (store.distance * 0.621371).toFixed(1);
+            option.value = `${store.name} - ${store.address}`;
+            option.textContent = `${store.name} - ${store.address} (${distanceMiles} mi)`;
+            dropdown.appendChild(option);
+          });
+          
+          storeCount.textContent = `Found ${stores.length} ${storeName} store${stores.length > 1 ? 's' : ''} within 10 miles`;
+          resultsContainer.style.display = 'block';
+          manualHint.style.display = 'block';
+          
+          // Load map for reference
+          const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(storeName + ' near ' + zipCode)}&t=&z=12&ie=UTF8&iwloc=&output=embed`;
+          document.getElementById('storeMap').src = mapUrl;
+          
+          resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          // No stores found - allow manual entry
+          noResults.style.display = 'block';
+          manualHint.style.display = 'block';
+          document.getElementById('pickupLocation').readOnly = false;
+          document.getElementById('pickupLocation').placeholder = 'Enter your preferred store address manually';
+        }
+      } catch (err) {
+        console.error('Store search error:', err);
+        loading.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'Search Stores Near Me';
+        noResults.style.display = 'block';
+        manualHint.style.display = 'block';
+        document.getElementById('pickupLocation').readOnly = false;
+        document.getElementById('pickupLocation').placeholder = 'Enter your preferred store address manually';
+      }
+    }
+    
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      // Haversine formula - returns distance in km
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    
+    function formatAddress(tags) {
+      const parts = [];
+      if (tags['addr:housenumber']) parts.push(tags['addr:housenumber']);
+      if (tags['addr:street']) parts.push(tags['addr:street']);
+      if (tags['addr:city']) parts.push(tags['addr:city']);
+      if (tags['addr:state']) parts.push(tags['addr:state']);
+      if (tags['addr:postcode']) parts.push(tags['addr:postcode']);
+      return parts.length > 0 ? parts.join(', ') : 'Address not available';
+    }
+    
+    function handleStoreSelect() {
+      const dropdown = document.getElementById('storeDropdown');
+      const pickupLocation = document.getElementById('pickupLocation');
+      
+      if (dropdown.value) {
+        pickupLocation.value = dropdown.value;
+        pickupLocation.readOnly = true;
+      } else {
+        pickupLocation.value = '';
+      }
+      validateStep1();
+    }
+    
+    function enableManualEntry() {
+      const pickupLocation = document.getElementById('pickupLocation');
+      pickupLocation.readOnly = false;
+      pickupLocation.placeholder = 'Enter your preferred store address (e.g., CVS at 123 Main St, Edison, NJ 08817)';
+      pickupLocation.value = '';
+      pickupLocation.focus();
+      
+      // Reset dropdown
+      document.getElementById('storeDropdown').value = '';
     }
 
     async function submitStep1() {
@@ -918,6 +1082,8 @@
       document.getElementById('phone').value = '';
       document.getElementById('zipCode').value = '';
       document.getElementById('pickupLocation').value = '';
+      document.getElementById('pickupLocation').readOnly = true;
+      document.getElementById('pickupLocation').placeholder = 'Select a store from the dropdown above, or enter your preferred store address manually';
       const storeRadios = document.querySelectorAll('input[name="storeType"]');
       storeRadios.forEach(radio => radio.checked = false);
       document.getElementById('photoFile').value = '';
@@ -925,7 +1091,11 @@
       document.getElementById('uploadArea').classList.remove('has-file');
       document.getElementById('step1Btn').disabled = true;
       document.getElementById('otherCountryGroup').style.display = 'none';
-      document.getElementById('mapContainer').style.display = 'none';
+      document.getElementById('storeResultsContainer').style.display = 'none';
+      document.getElementById('noStoresFound').style.display = 'none';
+      document.getElementById('storeLoading').style.display = 'none';
+      document.getElementById('manualEntryHint').style.display = 'none';
+      document.getElementById('storeDropdown').innerHTML = '<option value="">-- Select your pickup location --</option>';
       document.getElementById('storeMap').src = '';
       
       // Reset step 2
