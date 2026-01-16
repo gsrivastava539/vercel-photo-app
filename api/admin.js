@@ -403,13 +403,15 @@ async function handleDeleteUser(req, res) {
   
   const supabase = db.getSupabase();
   const userEmail = email.toLowerCase();
+  // Sanitize email same way as in order.js when creating folders
+  const sanitizedEmail = userEmail.replace(/[^a-zA-Z0-9]/g, '_');
   
-  // Delete user's Dropbox folder
-  const folderPath = `/PhotoRequests/${userEmail}`;
+  // Delete user's Dropbox folder (matches path created in order.js)
+  const folderPath = `/UserPhotos/${sanitizedEmail}`;
   try {
     const dropboxResult = await dropbox.deleteFolder(folderPath);
     if (dropboxResult.success) {
-      console.log(`Deleted Dropbox folder for ${userEmail}`);
+      console.log(`Deleted Dropbox folder for ${userEmail} at ${folderPath}`);
     } else {
       console.log(`Dropbox folder delete result for ${userEmail}:`, dropboxResult.message || dropboxResult.error);
     }

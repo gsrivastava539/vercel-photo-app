@@ -406,12 +406,32 @@
               Search Stores Near Me
             </button>
           </div>
-          <p class="helper-text" style="margin-top: 12px;">Select CVS or Walgreens, then click to find the nearest store. Enter your chosen location below.</p>
+          
+          <!-- Inline Map Container -->
+          <div id="mapContainer" style="display: none; margin-top: 16px;">
+            <div style="background: var(--step-bg); border-radius: 10px; padding: 12px;">
+              <p style="font-size: 0.9rem; color: var(--text); margin-bottom: 12px;">
+                <strong>Stores near your ZIP code:</strong> Browse the map below and select your preferred pickup location.
+              </p>
+              <iframe 
+                id="storeMap"
+                width="100%" 
+                height="350" 
+                style="border: none; border-radius: 8px;"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen>
+              </iframe>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                Click on a store marker to see its address, then copy the address below.
+              </p>
+            </div>
+          </div>
         </div>
         
         <div class="form-group">
           <label>Selected Pickup Location <span class="required">*</span></label>
-          <textarea id="pickupLocation" placeholder="After finding stores, enter your selected store address here (e.g., CVS at 123 Main St, Edison, NJ 08817)" oninput="validateStep1()"></textarea>
+          <textarea id="pickupLocation" placeholder="Enter your selected store address from the map above (e.g., CVS at 123 Main St, Edison, NJ 08817)" oninput="validateStep1()"></textarea>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
@@ -718,14 +738,19 @@
         return;
       }
       
-      let storeUrl;
-      if (storeType.value === 'CVS') {
-        storeUrl = `https://www.cvs.com/store-locator/landing?searchQuery=${encodeURIComponent(zipCode)}`;
-      } else {
-        storeUrl = `https://www.walgreens.com/storelocator/find.jsp?tab=store%20locator&requestType=locator&searchString=${encodeURIComponent(zipCode)}`;
-      }
+      // Build Google Maps search URL (free, no API key needed)
+      const searchQuery = `${storeType.value} near ${zipCode}`;
+      const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
       
-      window.open(storeUrl, '_blank');
+      // Show the map container and load the map
+      const mapContainer = document.getElementById('mapContainer');
+      const storeMap = document.getElementById('storeMap');
+      
+      storeMap.src = mapUrl;
+      mapContainer.style.display = 'block';
+      
+      // Scroll to the map
+      mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     async function submitStep1() {
@@ -900,6 +925,8 @@
       document.getElementById('uploadArea').classList.remove('has-file');
       document.getElementById('step1Btn').disabled = true;
       document.getElementById('otherCountryGroup').style.display = 'none';
+      document.getElementById('mapContainer').style.display = 'none';
+      document.getElementById('storeMap').src = '';
       
       // Reset step 2
       document.getElementById('paymentBtn').style.display = 'block';
