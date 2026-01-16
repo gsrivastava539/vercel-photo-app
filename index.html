@@ -168,6 +168,8 @@
     .message.show { display: block; }
     .message.success { background: rgba(5, 150, 105, 0.1); border: 1px solid rgba(5, 150, 105, 0.2); color: var(--success); }
     .message.error { background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.2); color: var(--error); }
+    .message.warning { background: rgba(217, 119, 6, 0.1); border: 1px solid rgba(217, 119, 6, 0.2); color: var(--warning); }
+    .message.info { background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.2); color: var(--primary); }
 
     .link-text { text-align: center; margin-top: 16px; }
     .link-text a { color: var(--primary); text-decoration: none; font-weight: 500; }
@@ -297,12 +299,45 @@
     const API_BASE = '';
     
     // Check if user is logged in on page load
-    window.onload = function() {
+    window.onload = async function() {
+      // Check for email verification token in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const verifyToken = urlParams.get('verify');
+      
+      if (verifyToken) {
+        await handleEmailVerification(verifyToken);
+        // Clean URL
+        window.history.replaceState({}, document.title, '/');
+        return;
+      }
+      
       const token = localStorage.getItem('authToken');
       if (token) {
         verifySession(token);
       }
     };
+    
+    async function handleEmailVerification(token) {
+      showMessage('Verifying your email...', 'success');
+      
+      try {
+        const res = await fetch(API_BASE + '/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'verify-email', token })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('✓ ' + data.message, 'success');
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Email verification failed. Please try again.', 'error');
+      }
+    }
     
     function showTab(tab) {
       // Update tabs
@@ -403,7 +438,14 @@
             window.location.href = '/dashboard';
           }
         } else {
-          showMessage(data.message, 'error');
+          // Show appropriate message based on the issue
+          if (data.needsVerification) {
+            showMessage('📧 ' + data.message, 'warning');
+          } else if (data.pendingApproval) {
+            showMessage('⏳ ' + data.message, 'info');
+          } else {
+            showMessage(data.message, 'error');
+          }
         }
       } catch (err) {
         showMessage('An error occurred. Please try again.', 'error');
@@ -432,8 +474,12 @@
         const data = await res.json();
         
         if (data.success) {
-          showMessage(data.message, 'success');
-          setTimeout(() => showTab('login'), 2000);
+          if (data.requiresVerification) {
+            showMessage('✓ Account created! Check your email for a verification link. After verification, an admin will approve your account.', 'success');
+          } else {
+            showMessage(data.message, 'success');
+            setTimeout(() => showTab('login'), 2000);
+          }
         } else {
           showMessage(data.message, 'error');
         }

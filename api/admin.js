@@ -50,6 +50,12 @@ module.exports = async (req, res) => {
         return await handleGetAllUsers(req, res);
       case 'send-email':
         return await handleSendEmail(req, res);
+      case 'pending-users':
+        return await handlePendingUsers(req, res);
+      case 'approve-user':
+        return await handleApproveUser(req, res);
+      case 'reject-user':
+        return await handleRejectUser(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -262,5 +268,109 @@ async function handleSendReadyEmail(req, res) {
     .eq('id', orderId);
   
   return res.status(200).json({ success: true, message: 'Ready for pickup email sent!' });
+}
+
+async function handlePendingUsers(req, res) {
+  const pendingUsers = await db.getPendingUsers();
+  return res.status(200).json({ success: true, users: pendingUsers });
+}
+
+async function handleApproveUser(req, res) {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+  
+  const result = await db.approveUser(email);
+  
+  if (!result.success) {
+    return res.status(500).json({ success: false, message: result.message });
+  }
+  
+  // Send approval notification email to user
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['host'];
+    
+    await resend.emails.send({
+      from: 'Digital Photo <noreply@parallaxbay.com>',
+      to: [email],
+      subject: '✅ Your Account Has Been Approved! - Digital Photo',
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <h2 style="color: #059669; margin: 0 0 20px; text-align: center;">✅ Account Approved!</h2>
+      <p style="color: #64748b; margin-bottom: 24px; text-align: center;">Great news! Your account has been approved. You can now log in and start using Digital Photo.</p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${protocol}://${host}/" style="background: #4f46e5; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Log In Now</a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+      <p style="margin: 0; color: #64748b; font-size: 14px; text-align: center;">
+        Questions? Reach out on WhatsApp: <a href="https://wa.me/15513587475" style="color: #4f46e5;">551-358-7475</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send approval email:', emailError);
+    // Don't fail the approval if email fails
+  }
+  
+  return res.status(200).json({ success: true, message: `User ${email} approved successfully!` });
+}
+
+async function handleRejectUser(req, res) {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+  
+  const result = await db.rejectUser(email);
+  
+  if (!result.success) {
+    return res.status(500).json({ success: false, message: result.message });
+  }
+  
+  // Optionally send rejection email
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
+    await resend.emails.send({
+      from: 'Digital Photo <noreply@parallaxbay.com>',
+      to: [email],
+      subject: 'Account Registration Update - Digital Photo',
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+      <h2 style="color: #64748b; margin: 0 0 20px; text-align: center;">Account Registration Update</h2>
+      <p style="color: #64748b; margin-bottom: 24px;">Thank you for your interest in Digital Photo. Unfortunately, we are unable to approve your account registration at this time.</p>
+      <p style="color: #64748b;">If you believe this was a mistake or have questions, please contact us.</p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+      <p style="margin: 0; color: #64748b; font-size: 14px; text-align: center;">
+        Questions? Reach out on WhatsApp: <a href="https://wa.me/15513587475" style="color: #4f46e5;">551-358-7475</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+      `,
+    });
+  } catch (emailError) {
+    console.error('Failed to send rejection email:', emailError);
+  }
+  
+  return res.status(200).json({ success: true, message: `User ${email} rejected and removed.` });
 }
 

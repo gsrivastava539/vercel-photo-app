@@ -271,16 +271,50 @@
     <div id="message" class="message"></div>
     
     <!-- Stats -->
-    <div class="card" style="margin-bottom: 24px;">
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <div style="width: 50px; height: 50px; background: rgba(79, 70, 229, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-          <span style="font-size: 1.5rem;">👥</span>
-        </div>
-        <div>
-          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px;">Total Registered Users</p>
-          <p style="font-size: 1.75rem; font-weight: 700; color: var(--primary);" id="userCount">-</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div class="card" style="margin-bottom: 0;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 50px; height: 50px; background: rgba(79, 70, 229, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 1.5rem;">👥</span>
+          </div>
+          <div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px;">Total Users</p>
+            <p style="font-size: 1.75rem; font-weight: 700; color: var(--primary);" id="userCount">-</p>
+          </div>
         </div>
       </div>
+      <div class="card" style="margin-bottom: 0;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 50px; height: 50px; background: rgba(217, 119, 6, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 1.5rem;">⏳</span>
+          </div>
+          <div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px;">Pending Approval</p>
+            <p style="font-size: 1.75rem; font-weight: 700; color: var(--warning);" id="pendingCount">-</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pending Users Section -->
+    <div class="card" id="pendingUsersCard" style="margin-bottom: 24px; display: none;">
+      <h2 style="color: var(--warning);">⏳ Pending User Approvals</h2>
+      <p class="subtitle">New users waiting for your approval before they can log in.</p>
+      <div id="pendingLoading" class="loading">Loading pending users...</div>
+      <div style="overflow-x: auto;">
+        <table id="pendingTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Email Verified</th>
+              <th>Registered</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingBody"></tbody>
+        </table>
+      </div>
+      <div id="pendingEmpty" class="empty-state" style="display: none;">No pending users.</div>
     </div>
     
     <!-- Quick Email Section -->
@@ -407,8 +441,121 @@
         if (!data.valid || !data.isAdmin) { window.location.href = '/'; return; }
         loadOrders();
         loadUserCount();
-        loadUserEmails(); // Load emails for autocomplete
+        loadUserEmails();
+        loadPendingUsers(); // Load pending user approvals
       } catch (err) { console.error('Admin verification failed:', err); window.location.href = '/'; }
+    }
+    
+    async function loadPendingUsers() {
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'pending-users', token: getToken() })
+        });
+        const data = await res.json();
+        
+        document.getElementById('pendingLoading').style.display = 'none';
+        
+        if (data.success && data.users && data.users.length > 0) {
+          document.getElementById('pendingUsersCard').style.display = 'block';
+          document.getElementById('pendingTable').style.display = 'table';
+          document.getElementById('pendingEmpty').style.display = 'none';
+          document.getElementById('pendingCount').textContent = data.users.length;
+          
+          const tbody = document.getElementById('pendingBody');
+          tbody.innerHTML = '';
+          
+          data.users.forEach(user => {
+            const tr = document.createElement('tr');
+            const verifiedBadge = user.email_verified 
+              ? '<span class="status approved">✓ Verified</span>'
+              : '<span class="status pending">Not Verified</span>';
+            const createdAt = new Date(user.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            
+            tr.innerHTML = `
+              <td><strong>${user.email}</strong></td>
+              <td>${verifiedBadge}</td>
+              <td style="font-size: 0.85rem; color: var(--text-muted);">${createdAt}</td>
+              <td>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')" ${!user.email_verified ? 'disabled title="User must verify email first"' : ''}>
+                    Approve
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.email}')">
+                    Reject
+                  </button>
+                </div>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          document.getElementById('pendingUsersCard').style.display = 'none';
+          document.getElementById('pendingTable').style.display = 'none';
+          document.getElementById('pendingEmpty').style.display = 'block';
+          document.getElementById('pendingCount').textContent = '0';
+        }
+      } catch (err) {
+        console.error('Failed to load pending users:', err);
+        document.getElementById('pendingLoading').textContent = 'Failed to load pending users.';
+      }
+    }
+    
+    async function approveUser(email) {
+      if (!confirm(`Approve user ${email}? They will receive an email notification and can then log in.`)) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'approve-user',
+            token: getToken(),
+            email: email
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(data.message, 'success');
+          loadPendingUsers(); // Refresh the list
+          loadUserCount(); // Update counts
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Failed to approve user.', 'error');
+      }
+    }
+    
+    async function rejectUser(email) {
+      if (!confirm(`Reject and remove user ${email}? This action cannot be undone.`)) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'reject-user',
+            token: getToken(),
+            email: email
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(data.message, 'success');
+          loadPendingUsers(); // Refresh the list
+          loadUserCount(); // Update counts
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Failed to reject user.', 'error');
+      }
     }
     
     async function loadUserEmails() {
