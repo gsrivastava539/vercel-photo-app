@@ -402,24 +402,39 @@ async function handleDeleteUser(req, res) {
   }
   
   const supabase = db.getSupabase();
+  const userEmail = email.toLowerCase();
   
-  // First, delete any orders associated with this user
+  // Delete user's Dropbox folder
+  const folderPath = `/PhotoRequests/${userEmail}`;
+  try {
+    const dropboxResult = await dropbox.deleteFolder(folderPath);
+    if (dropboxResult.success) {
+      console.log(`Deleted Dropbox folder for ${userEmail}`);
+    } else {
+      console.log(`Dropbox folder delete result for ${userEmail}:`, dropboxResult.message || dropboxResult.error);
+    }
+  } catch (dropboxError) {
+    console.error('Error deleting Dropbox folder:', dropboxError);
+    // Continue with user deletion even if Dropbox fails
+  }
+  
+  // Delete any orders associated with this user
   await supabase
     .from('orders')
     .delete()
-    .eq('user_email', email.toLowerCase());
+    .eq('user_email', userEmail);
   
   // Then delete the account
   const { error } = await supabase
     .from('accounts')
     .delete()
-    .eq('email', email.toLowerCase());
+    .eq('email', userEmail);
   
   if (error) {
     console.error('Error deleting user:', error);
     return res.status(500).json({ success: false, message: 'Failed to delete user.' });
   }
   
-  return res.status(200).json({ success: true, message: `User ${email} has been deleted.` });
+  return res.status(200).json({ success: true, message: `User ${email} and their Dropbox folder have been deleted.` });
 }
 
