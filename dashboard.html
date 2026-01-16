@@ -411,28 +411,47 @@
           <div id="mapContainer" style="display: none; margin-top: 16px;">
             <div style="background: var(--step-bg); border-radius: 10px; padding: 16px;">
               <p style="font-size: 0.9rem; color: var(--text); margin-bottom: 12px;">
-                <strong>Find your nearest store on the map below.</strong> Click on a store marker to see its address, then enter it in the field below.
+                <strong>Quick Reference Map:</strong>
               </p>
               <iframe 
                 id="storeMap"
                 width="100%" 
-                height="350" 
+                height="280" 
                 style="border: none; border-radius: 8px;"
                 loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
                 allowfullscreen>
               </iframe>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">
-                Tip: Click on a red marker to see the store address. Copy and paste it below.
-              </p>
+              
+              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <p style="font-size: 0.9rem; color: var(--text); margin-bottom: 12px;">
+                  <strong>Find exact store address:</strong> Use the official store locator below
+                </p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-sm" id="openCVSLocator" onclick="openStoreLocator('CVS')" style="flex: 1; min-width: 140px;">
+                    Open CVS Store Finder
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="openWalgreensLocator" onclick="openStoreLocator('Walgreens')" style="flex: 1; min-width: 140px;">
+                    Open Walgreens Finder
+                  </button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
+                  Click the button above to open the official store locator. Find your store, then copy the full address.
+                </p>
+              </div>
             </div>
           </div>
         </div>
         
         <div class="form-group">
           <label>Selected Pickup Location <span class="required">*</span></label>
-          <textarea id="pickupLocation" placeholder="Enter your selected store address (e.g., CVS - 123 Main St, Edison, NJ 08817)" oninput="validateStep1()"></textarea>
-          <p class="helper-text">Enter the store name and full address from the map above.</p>
+          <div style="position: relative;">
+            <textarea id="pickupLocation" placeholder="Paste or type your selected store address here&#10;Example: CVS Pharmacy - 123 Main Street, Edison, NJ 08817" oninput="validateStep1()" style="padding-right: 80px; min-height: 70px;"></textarea>
+            <button type="button" onclick="pasteFromClipboard()" class="btn btn-secondary btn-sm" style="position: absolute; right: 8px; top: 8px; padding: 6px 12px; font-size: 0.8rem;">
+              Paste
+            </button>
+          </div>
+          <p class="helper-text">After finding your store, paste the complete address above.</p>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
@@ -750,8 +769,52 @@
       storeMap.src = mapUrl;
       mapContainer.style.display = 'block';
       
+      // Highlight the relevant store locator button
+      const cvsBtn = document.getElementById('openCVSLocator');
+      const walgreensBtn = document.getElementById('openWalgreensLocator');
+      
+      if (storeType.value === 'CVS') {
+        cvsBtn.style.background = 'var(--primary)';
+        cvsBtn.style.color = 'white';
+        walgreensBtn.style.background = '';
+        walgreensBtn.style.color = '';
+      } else {
+        walgreensBtn.style.background = 'var(--primary)';
+        walgreensBtn.style.color = 'white';
+        cvsBtn.style.background = '';
+        cvsBtn.style.color = '';
+      }
+      
       // Scroll to the map
       mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    function openStoreLocator(store) {
+      const zipCode = document.getElementById('zipCode').value.trim() || '';
+      
+      let url;
+      if (store === 'CVS') {
+        url = `https://www.cvs.com/store-locator/landing?searchQuery=${encodeURIComponent(zipCode)}`;
+      } else {
+        url = `https://www.walgreens.com/storelocator/find.jsp?tab=store%20locator&requestType=locator&searchString=${encodeURIComponent(zipCode)}`;
+      }
+      
+      // Open in a new window (popup style for easier copy-paste)
+      window.open(url, 'storeLocator', 'width=900,height=700,scrollbars=yes,resizable=yes');
+    }
+    
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const pickupLocation = document.getElementById('pickupLocation');
+        pickupLocation.value = text;
+        validateStep1();
+        showMessage('Address pasted successfully!', 'success');
+      } catch (err) {
+        // Fallback for browsers that don't support clipboard API
+        document.getElementById('pickupLocation').focus();
+        alert('Please use Ctrl+V (or Cmd+V on Mac) to paste your address.');
+      }
     }
 
     async function submitStep1() {
