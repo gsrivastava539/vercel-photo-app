@@ -485,6 +485,13 @@
         
         document.getElementById('usersLoading').style.display = 'none';
         
+        if (!data.success) {
+          console.error('Failed to load users:', data.message);
+          document.getElementById('usersLoading').style.display = 'block';
+          document.getElementById('usersLoading').textContent = 'Error: ' + (data.message || 'Failed to load users');
+          return;
+        }
+        
         if (data.success && data.users && data.users.length > 0) {
           document.getElementById('usersTable').style.display = 'table';
           document.getElementById('usersEmpty').style.display = 'none';
@@ -523,7 +530,8 @@
         }
       } catch (err) {
         console.error('Failed to load registered users:', err);
-        document.getElementById('usersLoading').textContent = 'Failed to load users.';
+        document.getElementById('usersLoading').style.display = 'block';
+        document.getElementById('usersLoading').textContent = 'Error loading users. Check console.';
       }
     }
     
@@ -567,7 +575,12 @@
         
         document.getElementById('pendingLoading').style.display = 'none';
         
-        if (data.success && data.users && data.users.length > 0) {
+        if (!data.success) {
+          console.error('Failed to load pending users:', data.message);
+          return;
+        }
+        
+        if (data.users && data.users.length > 0) {
           document.getElementById('pendingUsersCard').style.display = 'block';
           document.getElementById('pendingTable').style.display = 'table';
           document.getElementById('pendingEmpty').style.display = 'none';
