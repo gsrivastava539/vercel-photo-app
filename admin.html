@@ -305,8 +305,8 @@
         <table id="pendingTable" style="display: none;">
           <thead>
             <tr>
-              <th>Email</th>
-              <th>Email Verified</th>
+              <th>User</th>
+              <th>Provider</th>
               <th>Registered</th>
               <th>Actions</th>
             </tr>
@@ -468,20 +468,23 @@
           
           data.users.forEach(user => {
             const tr = document.createElement('tr');
-            const verifiedBadge = user.email_verified 
-              ? '<span class="status approved">✓ Verified</span>'
-              : '<span class="status pending">Not Verified</span>';
+            const authBadge = user.auth_provider === 'google' 
+              ? '<span class="status approved" style="font-size: 0.75rem;">Google</span>'
+              : '<span class="status pending" style="font-size: 0.75rem;">Email</span>';
             const createdAt = new Date(user.created_at).toLocaleDateString('en-US', {
               month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
             
             tr.innerHTML = `
-              <td><strong>${user.email}</strong></td>
-              <td>${verifiedBadge}</td>
+              <td>
+                <strong>${user.email}</strong>
+                ${user.display_name ? `<br><span style="font-size: 0.8rem; color: var(--text-muted);">${user.display_name}</span>` : ''}
+              </td>
+              <td>${authBadge}</td>
               <td style="font-size: 0.85rem; color: var(--text-muted);">${createdAt}</td>
               <td>
                 <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')" ${!user.email_verified ? 'disabled title="User must verify email first"' : ''}>
+                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')">
                     Approve
                   </button>
                   <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.email}')">

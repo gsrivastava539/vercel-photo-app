@@ -19,18 +19,10 @@ module.exports = async (req, res) => {
   
   try {
     switch (action) {
-      case 'signup':
-        return await handleSignup(req, res);
-      case 'login':
-        return await handleLogin(req, res);
-      case 'forgot':
-        return await handleForgot(req, res);
-      case 'reset':
-        return await handleReset(req, res);
+      case 'google-signin':
+        return await handleGoogleSignIn(req, res);
       case 'verify':
         return await handleVerify(req, res);
-      case 'verify-email':
-        return await handleVerifyEmail(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -41,79 +33,72 @@ module.exports = async (req, res) => {
 };
 
 const ADMIN_EMAIL = 'studentone.qa@gmail.com';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-async function handleSignup(req, res) {
-  const { email, password } = req.body;
-  
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
-  }
-  
-  const fullEmail = email.toLowerCase().trim();
-  
-  if (!authLib.validateEmail(fullEmail)) {
-    return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
-  }
-  
-  const passwordValidation = authLib.validatePassword(password);
-  if (!passwordValidation.valid) {
-    return res.status(400).json({ success: false, message: passwordValidation.message });
-  }
-  
-  const existingAccount = await db.findAccountByEmail(fullEmail);
-  if (existingAccount) {
-    return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
-  }
-  
-  // Generate verification token
-  const verificationToken = authLib.generateResetToken();
-  
-  const hashedPassword = await authLib.hashPassword(password);
-  await db.createAccount(fullEmail, hashedPassword, verificationToken);
-  
-  const protocol = req.headers['x-forwarded-proto'] || 'https';
-  const host = req.headers['host'];
-  const verificationLink = `${protocol}://${host}/?verify=${verificationToken}`;
-  
-  // Send verification email to user
+// Verify Google ID token
+async function verifyGoogleToken(credential) {
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'Digital Photo <noreply@parallaxbay.com>',
-      to: [fullEmail],
-      subject: '✉️ Verify Your Email - Digital Photo',
-      html: `
-<!DOCTYPE html>
-<html>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
-  <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-      <h2 style="color: #4f46e5; margin: 0 0 20px; text-align: center;">✉️ Verify Your Email</h2>
-      <p style="color: #64748b; margin-bottom: 24px;">Hi! Please click the button below to verify your email address.</p>
-      <div style="text-align: center; margin: 32px 0;">
-        <a href="${verificationLink}" style="background: #4f46e5; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Verify Email</a>
-      </div>
-      <p style="color: #94a3b8; font-size: 14px; margin-top: 24px;">After verification, an admin will review and approve your account. You'll receive another email once approved.</p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-      <p style="color: #94a3b8; font-size: 12px; margin: 0;">If you didn't create this account, you can ignore this email.</p>
-    </div>
-  </div>
-</body>
-</html>
-      `,
-    });
-  } catch (emailError) {
-    console.error('Failed to send verification email:', emailError);
+    // Decode the JWT to get user info (Google's client library handles verification)
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    
+    if (!response.ok) {
+      throw new Error('Invalid token');
+    }
+    
+    const payload = await response.json();
+    
+    // Verify the token is for our app
+    if (payload.aud !== GOOGLE_CLIENT_ID) {
+      throw new Error('Token not for this app');
+    }
+    
+    return {
+      email: payload.email.toLowerCase(),
+      name: payload.name || '',
+      picture: payload.picture || '',
+      emailVerified: payload.email_verified === 'true'
+    };
+  } catch (error) {
+    console.error('Google token verification error:', error);
+    return null;
+  }
+}
+
+async function handleGoogleSignIn(req, res) {
+  const { credential } = req.body;
+  
+  if (!credential) {
+    return res.status(400).json({ success: false, message: 'Google credential is required.' });
   }
   
-  // Send notification email to admin about new user (needs approval)
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'Digital Photo <noreply@parallaxbay.com>',
-      to: [ADMIN_EMAIL],
-      subject: '🆕 New User Needs Approval - Digital Photo',
-      html: `
+  // Verify Google token
+  const googleUser = await verifyGoogleToken(credential);
+  
+  if (!googleUser) {
+    return res.status(401).json({ success: false, message: 'Invalid Google sign-in. Please try again.' });
+  }
+  
+  const email = googleUser.email;
+  const isAdmin = await db.isAdmin(email);
+  
+  // Check if user exists
+  let account = await db.findAccountByEmail(email);
+  
+  if (!account) {
+    // New user - create account
+    account = await db.createGoogleAccount(email, googleUser.name, googleUser.picture);
+    
+    // Send notification email to admin about new user
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['host'];
+    
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: 'Digital Photo <noreply@parallaxbay.com>',
+        to: [ADMIN_EMAIL],
+        subject: '🆕 New User Needs Approval - Digital Photo',
+        html: `
 <!DOCTYPE html>
 <html>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
@@ -122,10 +107,11 @@ async function handleSignup(req, res) {
       <h2 style="color: #f59e0b; margin: 0 0 20px; text-align: center;">🆕 New User Needs Approval</h2>
       <div style="background: #fef3c7; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
         <p style="margin: 0; font-size: 14px; color: #92400e;">Email Address:</p>
-        <p style="margin: 4px 0 0; font-size: 18px; font-weight: 600; color: #78350f;">${fullEmail}</p>
+        <p style="margin: 4px 0 0; font-size: 18px; font-weight: 600; color: #78350f;">${email}</p>
+        ${googleUser.name ? `<p style="margin: 8px 0 0; font-size: 14px; color: #92400e;">Name: ${googleUser.name}</p>` : ''}
       </div>
       <p style="margin: 0 0 20px; color: #64748b; font-size: 14px; text-align: center;">
-        Registered at: ${new Date().toLocaleString()}
+        Signed up via Google at: ${new Date().toLocaleString()}
       </p>
       <div style="text-align: center;">
         <a href="${protocol}://${host}/admin" style="background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Go to Admin Panel</a>
@@ -135,133 +121,40 @@ async function handleSignup(req, res) {
   </div>
 </body>
 </html>
-      `,
-    });
-  } catch (emailError) {
-    console.error('Failed to send admin notification:', emailError);
-  }
-  
-  return res.status(200).json({
-    success: true,
-    message: 'Account created! Please check your email to verify your account.',
-    email: fullEmail,
-    requiresVerification: true,
-  });
-}
-
-async function handleLogin(req, res) {
-  const { email, password } = req.body;
-  
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
-  }
-  
-  const fullEmail = email.toLowerCase().trim();
-  
-  const account = await db.findAccountByEmail(fullEmail);
-  if (!account) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
-  }
-  
-  const isValidPassword = await authLib.comparePassword(password, account.password);
-  if (!isValidPassword) {
-    return res.status(401).json({ success: false, message: 'Invalid email or password.' });
-  }
-  
-  // Check if user is admin (admins bypass verification/approval)
-  const isAdmin = await db.isAdmin(fullEmail);
-  
-  // For non-admins, check email verification and admin approval
-  if (!isAdmin) {
-    if (!account.email_verified) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Please verify your email first. Check your inbox for the verification link.',
-        needsVerification: true
+        `,
       });
+    } catch (emailError) {
+      console.error('Failed to send admin notification:', emailError);
     }
     
-    if (!account.admin_approved) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Your account is pending admin approval. You will receive an email once approved.',
-        pendingApproval: true
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      isNewUser: true,
+      email: email,
+      message: 'Account created! You will receive a confirmation email once approved.',
+    });
   }
   
-  const token = authLib.generateToken({ email: fullEmail, isAdmin: isAdmin });
+  // Existing user - check if approved (admins bypass)
+  if (!isAdmin && !account.admin_approved) {
+    return res.status(200).json({
+      success: true,
+      pendingApproval: true,
+      email: email,
+      message: 'Your account is pending approval.',
+    });
+  }
+  
+  // Approved user or admin - generate token
+  const token = authLib.generateToken({ email: email, isAdmin: isAdmin });
   
   return res.status(200).json({
     success: true,
     message: 'Login successful!',
-    email: fullEmail,
+    email: email,
     token: token,
     isAdmin: isAdmin,
   });
-}
-
-async function handleForgot(req, res) {
-  const { email } = req.body;
-  
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'Email is required.' });
-  }
-  
-  const fullEmail = email.toLowerCase().trim();
-  const successMessage = 'If an account exists, a reset link has been sent.';
-  
-  const account = await db.findAccountByEmail(fullEmail);
-  if (!account) {
-    return res.status(200).json({ success: true, message: successMessage });
-  }
-  
-  const resetToken = authLib.generateResetToken();
-  const expiry = new Date();
-  expiry.setHours(expiry.getHours() + 1);
-  
-  await db.setResetToken(account.id, resetToken, expiry.toISOString());
-  
-  const protocol = req.headers['x-forwarded-proto'] || 'https';
-  const host = req.headers['host'];
-  const resetLink = `${protocol}://${host}/reset?token=${resetToken}`;
-  
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  await resend.emails.send({
-    from: 'Digital Photo <noreply@parallaxbay.com>',
-    to: [fullEmail],
-    subject: 'Reset Your Password - Digital Photo',
-    html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link expires in 1 hour.</p>`,
-  });
-  
-  return res.status(200).json({ success: true, message: successMessage });
-}
-
-async function handleReset(req, res) {
-  const { token, password } = req.body;
-  
-  if (!token || !password) {
-    return res.status(400).json({ success: false, message: 'Token and password are required.' });
-  }
-  
-  const passwordValidation = authLib.validatePassword(password);
-  if (!passwordValidation.valid) {
-    return res.status(400).json({ success: false, message: passwordValidation.message });
-  }
-  
-  const account = await db.findAccountByResetToken(token);
-  if (!account) {
-    return res.status(400).json({ success: false, message: 'Invalid reset link.' });
-  }
-  
-  if (new Date() > new Date(account.token_expiry)) {
-    return res.status(400).json({ success: false, message: 'Reset link has expired.' });
-  }
-  
-  const hashedPassword = await authLib.hashPassword(password);
-  await db.updateAccountPassword(account.id, hashedPassword);
-  
-  return res.status(200).json({ success: true, message: 'Password reset successfully!' });
 }
 
 async function handleVerify(req, res) {
@@ -279,25 +172,5 @@ async function handleVerify(req, res) {
   const isAdmin = await db.isAdmin(decoded.email);
   
   return res.status(200).json({ valid: true, email: decoded.email, isAdmin: isAdmin });
-}
-
-async function handleVerifyEmail(req, res) {
-  const { token } = req.body;
-  
-  if (!token) {
-    return res.status(400).json({ success: false, message: 'Verification token is required.' });
-  }
-  
-  const result = await db.verifyEmail(token);
-  
-  if (!result.success) {
-    return res.status(400).json({ success: false, message: result.message });
-  }
-  
-  return res.status(200).json({ 
-    success: true, 
-    message: 'Email verified successfully! Your account is now pending admin approval. You will receive an email once approved.',
-    email: result.email
-  });
 }
 
