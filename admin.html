@@ -317,6 +317,33 @@
       <div id="pendingEmpty" class="empty-state" style="display: none;">No pending users.</div>
     </div>
     
+    <!-- Registered Users Section -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h2 style="color: var(--primary);">👥 Registered Users</h2>
+          <p class="subtitle" style="margin-bottom: 0;">All registered users. You can delete any account for security.</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadRegisteredUsers()">Refresh</button>
+      </div>
+      <div id="usersLoading" class="loading">Loading users...</div>
+      <div style="overflow-x: auto;">
+        <table id="usersTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Status</th>
+              <th>Provider</th>
+              <th>Registered</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+      <div id="usersEmpty" class="empty-state" style="display: none;">No registered users.</div>
+    </div>
+    
     <!-- Quick Email Section -->
     <div class="card" style="margin-bottom: 24px;">
       <h2>📧 Quick Email</h2>
@@ -442,8 +469,94 @@
         loadOrders();
         loadUserCount();
         loadUserEmails();
-        loadPendingUsers(); // Load pending user approvals
+        loadPendingUsers();
+        loadRegisteredUsers(); // Load all registered users
       } catch (err) { console.error('Admin verification failed:', err); window.location.href = '/'; }
+    }
+    
+    async function loadRegisteredUsers() {
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'registered-users', token: getToken() })
+        });
+        const data = await res.json();
+        
+        document.getElementById('usersLoading').style.display = 'none';
+        
+        if (data.success && data.users && data.users.length > 0) {
+          document.getElementById('usersTable').style.display = 'table';
+          document.getElementById('usersEmpty').style.display = 'none';
+          
+          const tbody = document.getElementById('usersBody');
+          tbody.innerHTML = '';
+          
+          data.users.forEach(user => {
+            const tr = document.createElement('tr');
+            const statusBadge = user.admin_approved 
+              ? '<span class="status approved">Approved</span>'
+              : '<span class="status pending">Pending</span>';
+            const authBadge = user.auth_provider === 'google' 
+              ? '<span style="font-size: 0.75rem; color: var(--text-muted);">Google</span>'
+              : '<span style="font-size: 0.75rem; color: var(--text-muted);">Email</span>';
+            const createdAt = new Date(user.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric'
+            });
+            
+            tr.innerHTML = \`
+              <td>
+                <strong>\${user.email}</strong>
+                \${user.display_name ? \`<br><span style="font-size: 0.8rem; color: var(--text-muted);">\${user.display_name}</span>\` : ''}
+              </td>
+              <td>\${statusBadge}</td>
+              <td>\${authBadge}</td>
+              <td style="font-size: 0.85rem; color: var(--text-muted);">\${createdAt}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('\${user.email}')">
+                  Delete
+                </button>
+              </td>
+            \`;
+            tbody.appendChild(tr);
+          });
+        } else {
+          document.getElementById('usersTable').style.display = 'none';
+          document.getElementById('usersEmpty').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Failed to load registered users:', err);
+        document.getElementById('usersLoading').textContent = 'Failed to load users.';
+      }
+    }
+    
+    async function deleteUser(email) {
+      if (!confirm(\`⚠️ DELETE USER: \${email}\\n\\nThis will permanently delete this account and all their orders.\\n\\nAre you sure?\`)) return;
+      
+      try {
+        const res = await fetch(API_BASE + '/api/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'delete-user',
+            token: getToken(),
+            email: email
+          })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(data.message, 'success');
+          loadRegisteredUsers();
+          loadPendingUsers();
+          loadUserCount();
+          loadUserEmails();
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (err) {
+        showMessage('Failed to delete user.', 'error');
+      }
     }
     
     async function loadPendingUsers() {

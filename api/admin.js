@@ -56,6 +56,10 @@ module.exports = async (req, res) => {
         return await handleApproveUser(req, res);
       case 'reject-user':
         return await handleRejectUser(req, res);
+      case 'registered-users':
+        return await handleRegisteredUsers(req, res);
+      case 'delete-user':
+        return await handleDeleteUser(req, res);
       default:
         return res.status(400).json({ success: false, message: 'Invalid action' });
     }
@@ -372,5 +376,50 @@ async function handleRejectUser(req, res) {
   }
   
   return res.status(200).json({ success: true, message: `User ${email} rejected and removed.` });
+}
+
+async function handleRegisteredUsers(req, res) {
+  const supabase = db.getSupabase();
+  
+  const { data: users, error } = await supabase
+    .from('accounts')
+    .select('id, email, display_name, auth_provider, admin_approved, created_at')
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching registered users:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch users.' });
+  }
+  
+  return res.status(200).json({ success: true, users: users || [] });
+}
+
+async function handleDeleteUser(req, res) {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.' });
+  }
+  
+  const supabase = db.getSupabase();
+  
+  // First, delete any orders associated with this user
+  await supabase
+    .from('orders')
+    .delete()
+    .eq('user_email', email.toLowerCase());
+  
+  // Then delete the account
+  const { error } = await supabase
+    .from('accounts')
+    .delete()
+    .eq('email', email.toLowerCase());
+  
+  if (error) {
+    console.error('Error deleting user:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete user.' });
+  }
+  
+  return res.status(200).json({ success: true, message: `User ${email} has been deleted.` });
 }
 
