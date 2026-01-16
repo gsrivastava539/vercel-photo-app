@@ -305,8 +305,8 @@
         <table id="pendingTable" style="display: none;">
           <thead>
             <tr>
-              <th>User</th>
-              <th>Provider</th>
+              <th>Email</th>
+              <th>Email Verified</th>
               <th>Registered</th>
               <th>Actions</th>
             </tr>
@@ -331,9 +331,9 @@
         <table id="usersTable" style="display: none;">
           <thead>
             <tr>
-              <th>User</th>
+              <th>Email</th>
               <th>Status</th>
-              <th>Provider</th>
+              <th>Email Verified</th>
               <th>Registered</th>
               <th>Actions</th>
             </tr>
@@ -497,20 +497,17 @@
             const statusBadge = user.admin_approved 
               ? '<span class="status approved">Approved</span>'
               : '<span class="status pending">Pending</span>';
-            const authBadge = user.auth_provider === 'google' 
-              ? '<span style="font-size: 0.75rem; color: var(--text-muted);">Google</span>'
-              : '<span style="font-size: 0.75rem; color: var(--text-muted);">Email</span>';
+            const verifiedBadge = user.email_verified 
+              ? '<span style="font-size: 0.75rem; color: var(--success);">Verified</span>'
+              : '<span style="font-size: 0.75rem; color: var(--warning);">Not Verified</span>';
             const createdAt = new Date(user.created_at).toLocaleDateString('en-US', {
               month: 'short', day: 'numeric', year: 'numeric'
             });
             
             tr.innerHTML = \`
-              <td>
-                <strong>\${user.email}</strong>
-                \${user.display_name ? \`<br><span style="font-size: 0.8rem; color: var(--text-muted);">\${user.display_name}</span>\` : ''}
-              </td>
+              <td><strong>\${user.email}</strong></td>
               <td>\${statusBadge}</td>
-              <td>\${authBadge}</td>
+              <td>\${verifiedBadge}</td>
               <td style="font-size: 0.85rem; color: var(--text-muted);">\${createdAt}</td>
               <td>
                 <button class="btn btn-danger btn-sm" onclick="deleteUser('\${user.email}')">
@@ -581,23 +578,20 @@
           
           data.users.forEach(user => {
             const tr = document.createElement('tr');
-            const authBadge = user.auth_provider === 'google' 
-              ? '<span class="status approved" style="font-size: 0.75rem;">Google</span>'
-              : '<span class="status pending" style="font-size: 0.75rem;">Email</span>';
+            const verifiedBadge = user.email_verified 
+              ? '<span class="status approved">Verified</span>'
+              : '<span class="status pending">Not Verified</span>';
             const createdAt = new Date(user.created_at).toLocaleDateString('en-US', {
               month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
             
             tr.innerHTML = `
-              <td>
-                <strong>${user.email}</strong>
-                ${user.display_name ? `<br><span style="font-size: 0.8rem; color: var(--text-muted);">${user.display_name}</span>` : ''}
-              </td>
-              <td>${authBadge}</td>
+              <td><strong>${user.email}</strong></td>
+              <td>${verifiedBadge}</td>
               <td style="font-size: 0.85rem; color: var(--text-muted);">${createdAt}</td>
               <td>
                 <div style="display: flex; gap: 8px;">
-                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')">
+                  <button class="btn btn-success btn-sm" onclick="approveUser('${user.email}')" ${!user.email_verified ? 'disabled title="User must verify email first"' : ''}>
                     Approve
                   </button>
                   <button class="btn btn-danger btn-sm" onclick="rejectUser('${user.email}')">

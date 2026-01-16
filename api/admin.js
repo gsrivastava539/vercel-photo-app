@@ -383,7 +383,7 @@ async function handleRegisteredUsers(req, res) {
   
   const { data: users, error } = await supabase
     .from('accounts')
-    .select('id, email, display_name, auth_provider, admin_approved, created_at')
+    .select('id, email, email_verified, admin_approved, created_at')
     .order('created_at', { ascending: false });
   
   if (error) {
