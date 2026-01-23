@@ -511,7 +511,7 @@
         const data = await res.json();
         
         if (data.success) {
-          showMessage('✓ Account created! Please check your email to verify your account. After verification, you will receive a confirmation email once approved by an administrator.', 'success');
+          showMessage('✓ Account created! Please check your email to verify your account. Once verified, you can sign in.', 'success');
         } else {
           showMessage(data.message, 'error');
         }

@@ -91,11 +91,11 @@ async function handleSignup(req, res) {
   <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
     <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
       <h2 style="color: #4f46e5; margin: 0 0 20px; text-align: center;">✉️ Verify Your Email</h2>
-      <p style="color: #64748b; margin-bottom: 24px;">Hi! Please click the button below to verify your email address.</p>
+      <p style="color: #64748b; margin-bottom: 24px;">Hi! Please click the button below to verify your email address and activate your account.</p>
       <div style="text-align: center; margin: 32px 0;">
         <a href="${verificationLink}" style="background: #4f46e5; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Verify Email</a>
       </div>
-      <p style="color: #94a3b8; font-size: 14px; margin-top: 24px;">After verification, an admin will review and approve your account. You'll receive another email once approved.</p>
+      <p style="color: #94a3b8; font-size: 14px; margin-top: 24px;">Once verified, you can sign in and start using Digital Photo.</p>
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
       <p style="color: #94a3b8; font-size: 12px; margin: 0;">If you didn't create this account, you can ignore this email.</p>
     </div>
@@ -106,41 +106,6 @@ async function handleSignup(req, res) {
     });
   } catch (emailError) {
     console.error('Failed to send verification email:', emailError);
-  }
-  
-  // Send notification email to admin about new user (needs approval)
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'Digital Photo <noreply@parallaxbay.com>',
-      to: [ADMIN_EMAIL],
-      subject: '🆕 New User Needs Approval - Digital Photo',
-      html: `
-<!DOCTYPE html>
-<html>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a2e; margin: 0; padding: 0; background-color: #f8fafc;">
-  <div style="max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-      <h2 style="color: #f59e0b; margin: 0 0 20px; text-align: center;">🆕 New User Needs Approval</h2>
-      <div style="background: #fef3c7; padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
-        <p style="margin: 0; font-size: 14px; color: #92400e;">Email Address:</p>
-        <p style="margin: 4px 0 0; font-size: 18px; font-weight: 600; color: #78350f;">${fullEmail}</p>
-      </div>
-      <p style="margin: 0 0 20px; color: #64748b; font-size: 14px; text-align: center;">
-        Registered at: ${new Date().toLocaleString()}
-      </p>
-      <div style="text-align: center;">
-        <a href="${protocol}://${host}/admin" style="background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Go to Admin Panel</a>
-      </div>
-      <p style="margin: 16px 0 0; color: #94a3b8; font-size: 12px; text-align: center;">Review and approve this user in the Pending Users tab.</p>
-    </div>
-  </div>
-</body>
-</html>
-      `,
-    });
-  } catch (emailError) {
-    console.error('Failed to send admin notification:', emailError);
   }
   
   return res.status(200).json({
@@ -169,24 +134,16 @@ async function handleLogin(req, res) {
     return res.status(401).json({ success: false, message: 'Invalid email or password.' });
   }
   
-  // Check if user is admin (admins bypass verification/approval)
+  // Check if user is admin
   const isAdmin = await db.isAdmin(fullEmail);
   
-  // For non-admins, check email verification and admin approval
+  // For non-admins, check email verification
   if (!isAdmin) {
     if (!account.email_verified) {
       return res.status(403).json({ 
         success: false, 
         message: 'Please verify your email first. Check your inbox for the verification link.',
         needsVerification: true
-      });
-    }
-    
-    if (!account.admin_approved) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Your account is pending admin approval. You will receive an email once approved.',
-        pendingApproval: true
       });
     }
   }
@@ -376,7 +333,7 @@ async function handleVerifyEmail(req, res) {
   
   return res.status(200).json({ 
     success: true, 
-    message: 'Email verified successfully! Your account is now pending admin approval. You will receive an email once approved.',
+    message: 'Email verified successfully! You can now sign in to your account.',
     email: result.email
   });
 }
