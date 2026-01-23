@@ -166,8 +166,8 @@ async function handleLogin(req, res) {
     <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
       <h2 style="color: #4f46e5; margin: 0 0 20px; text-align: center;">🔐 Login Verification</h2>
       <p style="color: #64748b; margin-bottom: 24px; text-align: center;">Enter this code to complete your sign in:</p>
-      <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-        <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: white; font-family: 'Courier New', monospace;">${loginCode}</span>
+      <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+        <span style="font-size: 32px; font-weight: 700; letter-spacing: 4px; color: white; font-family: 'Courier New', monospace;">${loginCode}</span>
       </div>
       <p style="color: #94a3b8; font-size: 14px; margin-top: 24px; text-align: center;">This code will expire in 10 minutes.</p>
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
