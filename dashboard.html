@@ -410,8 +410,8 @@
           <!-- Map Container -->
           <div id="mapContainer" style="display: none; margin-top: 16px;">
             <div style="background: var(--step-bg); border-radius: 10px; padding: 16px;">
-              <p style="font-size: 0.9rem; color: var(--text); margin-bottom: 12px;">
-                <strong>Click on a store marker to see its address, then copy and paste it below.</strong>
+              <p style="font-size: 0.9rem; color: var(--text); margin-bottom: 8px;">
+                <strong>Tap on a store marker to see its address.</strong>
               </p>
               <iframe 
                 id="storeMap"
@@ -422,6 +422,19 @@
                 referrerpolicy="no-referrer-when-downgrade"
                 allowfullscreen>
               </iframe>
+              
+              <!-- Mobile-friendly copy help -->
+              <div style="margin-top: 12px; background: rgba(79, 70, 229, 0.08); border-radius: 8px; padding: 12px;">
+                <p style="font-size: 0.85rem; color: var(--text); margin: 0 0 8px;">
+                  <strong>📱 On Mobile:</strong> Tap a marker → Long press the address to copy
+                </p>
+                <p style="font-size: 0.85rem; color: var(--text); margin: 0 0 12px;">
+                  <strong>💻 On Desktop:</strong> Click marker → Select and copy the address
+                </p>
+                <button type="button" onclick="openFullMap()" class="btn btn-secondary btn-sm" style="width: 100%; font-size: 0.85rem;">
+                  Open Full Map for Easier Copying
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -429,11 +442,12 @@
         <div class="form-group">
           <label>Selected Pickup Location <span class="required">*</span></label>
           <div style="position: relative;">
-            <textarea id="pickupLocation" placeholder="Paste the store address from the map above (e.g., CVS Pharmacy, 123 Main St, Edison, NJ 08817)" oninput="validateStep1()" style="padding-right: 80px;"></textarea>
+            <textarea id="pickupLocation" placeholder="Paste or type the store address (e.g., CVS Pharmacy, 3110 NJ-38, Mt Laurel Township, NJ 08054)" oninput="validateStep1()" style="padding-right: 80px;"></textarea>
             <button type="button" onclick="pasteFromClipboard()" class="btn btn-secondary btn-sm" style="position: absolute; right: 8px; top: 8px; padding: 6px 12px; font-size: 0.8rem;">
               Paste
             </button>
           </div>
+          <p class="helper-text" style="margin-top: 8px;">Can't copy from map? Type the store name and address manually.</p>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
@@ -726,6 +740,9 @@
       document.getElementById('step1Btn').disabled = !valid;
     }
     
+    // Store current search for "Open Full Map" button
+    let currentMapSearch = '';
+    
     function findNearestStore() {
       const zipCode = document.getElementById('zipCode').value.trim();
       const storeType = document.querySelector('input[name="storeType"]:checked');
@@ -742,6 +759,7 @@
       
       // Build Google Maps search URL (free, no API key needed)
       const searchQuery = `${storeType.value} pharmacy near ${zipCode}, USA`;
+      currentMapSearch = searchQuery; // Store for full map button
       const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(searchQuery)}&z=14&output=embed`;
       
       // Show the map container and load the map
@@ -753,6 +771,24 @@
       
       // Scroll to the map
       mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    function openFullMap() {
+      if (!currentMapSearch) {
+        const zipCode = document.getElementById('zipCode').value.trim();
+        const storeType = document.querySelector('input[name="storeType"]:checked');
+        if (zipCode && storeType) {
+          currentMapSearch = `${storeType.value} pharmacy near ${zipCode}, USA`;
+        }
+      }
+      
+      if (currentMapSearch) {
+        // Open full Google Maps in a new tab - easier to copy addresses
+        const fullMapUrl = `https://www.google.com/maps/search/${encodeURIComponent(currentMapSearch)}`;
+        window.open(fullMapUrl, '_blank');
+      } else {
+        alert('Please search for stores first.');
+      }
     }
     
     async function pasteFromClipboard() {
