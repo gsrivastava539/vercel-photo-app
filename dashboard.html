@@ -311,6 +311,95 @@
     .step-content { display: none; }
     .step-content.active { display: block; }
     
+    /* Photo Guidelines Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.show {
+      display: flex;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      line-height: 1;
+    }
+    .modal-close:hover {
+      color: var(--text);
+    }
+    .modal-body {
+      padding: 24px;
+    }
+    .example-photo {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .guideline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .guideline-item:last-child {
+      border-bottom: none;
+    }
+    .guideline-check {
+      width: 24px;
+      height: 24px;
+      background: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .guideline-text {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .modal-footer {
+      padding: 16px 24px 24px;
+    }
+    
     @media (max-width: 500px) {
       .container { padding: 16px; }
       header { flex-direction: column; gap: 12px; align-items: flex-start; padding: 16px; }
@@ -450,6 +539,13 @@
           <p class="helper-text" style="margin-top: 8px;">Can't copy from map? Type the store name and address manually.</p>
         </div>
         
+        <!-- Photo Guidelines Button -->
+        <div style="margin-bottom: 16px;">
+          <button type="button" onclick="showPhotoGuidelines()" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">📷</span> View Photo Guidelines (How to take a good photo)
+          </button>
+        </div>
+        
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
           <p>Click to upload your photo</p>
           <p style="font-size: 0.85rem;">Supported: JPG, PNG (Max 5MB)</p>
@@ -547,12 +643,73 @@
       © <span id="year"></span> Parallax Bay. All rights reserved.
     </div>
   </div>
+  
+  <!-- Photo Guidelines Modal -->
+  <div class="modal-overlay" id="photoGuidelinesModal" onclick="closePhotoGuidelines(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📷 Photo Guidelines</h3>
+        <button class="modal-close" onclick="closePhotoGuidelines()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Example Photo -->
+        <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&h=500&fit=crop&crop=face" 
+             alt="Example photo" 
+             class="example-photo">
+        
+        <h4 style="margin: 0 0 16px; color: var(--text);">Follow these guidelines for best results:</h4>
+        
+        <div class="guideline-item">
+          <div class="guideline-check">✓</div>
+          <div class="guideline-text"><strong>Head and body turned straight to the camera</strong><br>Face the camera directly, keeping your head level</div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-check">✓</div>
+          <div class="guideline-text"><strong>Good lighting and photo quality</strong><br>Use natural daylight or well-lit indoor area. Avoid harsh shadows on face</div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-check">✓</div>
+          <div class="guideline-text"><strong>Shoulders visible, head - no shadows or clutter</strong><br>Include head to mid-chest. Use a plain background (wall works great)</div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-check">✓</div>
+          <div class="guideline-text"><strong>Neutral expression with eyes open</strong><br>Keep a relaxed, natural expression. Both eyes should be clearly visible</div>
+        </div>
+        
+        <div class="guideline-item">
+          <div class="guideline-check">✓</div>
+          <div class="guideline-text"><strong>No glasses, hats, or headwear</strong><br>Remove sunglasses and hats (religious headwear is okay)</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closePhotoGuidelines()" style="width: 100%;">
+          Close instruction
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
     const API_BASE = '';
     let currentOrder = null;
     let currentStep = 1;
+    
+    // Photo Guidelines Modal
+    function showPhotoGuidelines() {
+      document.getElementById('photoGuidelinesModal').classList.add('show');
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+    
+    function closePhotoGuidelines(event) {
+      // If clicking on overlay (not modal content), close the modal
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('photoGuidelinesModal').classList.remove('show');
+      document.body.style.overflow = ''; // Restore scrolling
+    }
 
     window.onload = function() {
       const token = localStorage.getItem('authToken');
