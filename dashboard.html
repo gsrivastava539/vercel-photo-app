@@ -59,6 +59,31 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
     
+    /* Navigation Buttons */
+    .step-nav {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .step-nav .btn-back {
+      flex: 0 0 auto;
+      padding: 12px 20px;
+      background: var(--step-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .step-nav .btn-back:hover {
+      background: var(--border);
+    }
+    .step-nav .btn-next {
+      flex: 1;
+    }
+    
     /* Step Progress */
     .step-progress {
       display: flex;
@@ -618,9 +643,12 @@
           </div>
         </div>
         
-        <button class="btn btn-primary" style="margin-top: 20px;" id="step2Btn" onclick="submitStep2()" disabled>
-          Upload & Continue
-        </button>
+        <div class="step-nav">
+          <button class="btn-back" onclick="goToStep1()">← Back</button>
+          <button class="btn btn-primary btn-next" id="step2Btn" onclick="submitStep2()" disabled>
+            Upload & Continue
+          </button>
+        </div>
       </div>
     </div>
     
@@ -652,14 +680,18 @@
           <p style="color: var(--success); font-size: 0.9rem;">✓ Your photo has been uploaded and is being processed.</p>
         </div>
         
-        <button class="btn btn-primary" id="paymentBtn" onclick="submitPayment()">
-          I've Paid - Notify Admin
-        </button>
+        <div class="step-nav" id="step3NavPending">
+          <button class="btn-back" onclick="goToStep2()">← Back</button>
+          <button class="btn btn-primary btn-next" id="paymentBtn" onclick="submitPayment()">
+            I've Paid - Notify Admin
+          </button>
+        </div>
         
         <div class="waiting-notice" id="waitingNotice" style="display: none;">
           <p>⏳ Payment verification in progress...</p>
           <p style="color: var(--text-muted); font-size: 0.85rem;">Check your email for approval notification, then refresh this page.</p>
           <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh Status</button>
+          <button class="btn-back" style="margin-top: 12px; width: 100%;" onclick="goToStep2()">← Back to Upload</button>
         </div>
         
         <div id="step4BtnContainer" style="margin-top: 20px; display: none;">
@@ -698,9 +730,12 @@
           <div id="emptyHistory" style="text-align: center; padding: 20px; color: var(--text-muted); display: none;">No previous orders.</div>
         </div>
         
-        <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="startNewOrder()">
-          + Start New Order
-        </button>
+        <div class="step-nav">
+          <button class="btn-back" onclick="goToStep3()">← Back</button>
+          <button class="btn btn-secondary btn-next" onclick="startNewOrder()">
+            + Start New Order
+          </button>
+        </div>
       </div>
     </div>
     
@@ -985,6 +1020,11 @@
       document.getElementById('step2Btn').disabled = !file;
     }
     
+    function goToStep1() {
+      setStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
     function goToStep2() {
       // Store user info in session for later use
       sessionStorage.setItem('userInfo', JSON.stringify({
@@ -998,6 +1038,14 @@
       }));
       
       setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function goToStep3() {
+      setStep(3);
+      if (currentOrder) {
+        updateStep3UI(currentOrder);
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
