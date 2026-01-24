@@ -433,23 +433,27 @@
     <div class="step-progress">
       <div class="step-indicator">
         <div class="step-circle active" id="step1Circle">1</div>
-        <span class="step-label active" id="step1Label">Upload</span>
+        <span class="step-label active" id="step1Label">Info</span>
       </div>
       <div class="step-indicator">
         <div class="step-circle" id="step2Circle">2</div>
-        <span class="step-label" id="step2Label">Payment</span>
+        <span class="step-label" id="step2Label">Photo</span>
       </div>
       <div class="step-indicator">
         <div class="step-circle" id="step3Circle">3</div>
-        <span class="step-label" id="step3Label">Pickup</span>
+        <span class="step-label" id="step3Label">Payment</span>
+      </div>
+      <div class="step-indicator">
+        <div class="step-circle" id="step4Circle">4</div>
+        <span class="step-label" id="step4Label">Pickup</span>
       </div>
     </div>
     
-    <!-- Step 1: Upload Photo -->
+    <!-- Step 1: User Info -->
     <div class="step-content active" id="step1Content">
       <div class="card">
-        <h2>Upload Your Photograph</h2>
-        <p class="subtitle">Upload a picture from your phone covering half body. We'll process it professionally for you.</p>
+        <h2>Let's Get Started</h2>
+        <p class="subtitle">Please provide your details to begin your photo order.</p>
         
         <div class="form-row">
           <div class="form-group">
@@ -539,11 +543,67 @@
           <p class="helper-text" style="margin-top: 8px;">Can't copy from map? Type the store name and address manually.</p>
         </div>
         
-        <!-- Photo Guidelines Button -->
-        <div style="margin-bottom: 16px;">
-          <button type="button" onclick="showPhotoGuidelines()" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">📷</span> View Photo Guidelines (How to take a good photo)
-          </button>
+        <button class="btn btn-primary" style="margin-top: 20px;" id="step1Btn" onclick="goToStep2()" disabled>
+          Start
+        </button>
+      </div>
+    </div>
+    
+    <!-- Step 2: Upload Photo -->
+    <div class="step-content" id="step2Content">
+      <div class="card">
+        <h2>Upload Your Photo</h2>
+        <p class="subtitle">Take a selfie with your phone in good lighting and high quality.</p>
+        
+        <!-- Photo Instructions Image -->
+        <div style="background: var(--step-bg); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
+            <div style="flex: 1; text-align: center;">
+              <div style="background: #fff; border: 2px solid #3b82f6; border-radius: 8px; padding: 8px; position: relative;">
+                <div style="width: 100%; aspect-ratio: 3/4; background: #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="60" height="80" viewBox="0 0 60 80" fill="none">
+                    <ellipse cx="30" cy="22" rx="14" ry="16" fill="#9ca3af"/>
+                    <path d="M10 75 Q30 55 50 75" fill="#9ca3af"/>
+                    <circle cx="24" cy="20" r="2" fill="#6b7280"/>
+                    <circle cx="36" cy="20" r="2" fill="#6b7280"/>
+                    <path d="M26 28 Q30 32 34 28" stroke="#6b7280" stroke-width="1.5" fill="none"/>
+                  </svg>
+                </div>
+                <div style="position: absolute; bottom: -8px; left: -8px; width: 24px; height: 24px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✕</div>
+              </div>
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">Too dark</p>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div style="background: #fff; border: 2px solid #3b82f6; border-radius: 8px; padding: 8px; position: relative;">
+                <div style="width: 100%; aspect-ratio: 3/4; background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="60" height="80" viewBox="0 0 60 80" fill="none" style="opacity: 0.7;">
+                    <ellipse cx="30" cy="22" rx="14" ry="16" fill="#6b7280"/>
+                    <path d="M10 75 Q30 55 50 75" fill="#6b7280"/>
+                  </svg>
+                </div>
+                <div style="position: absolute; bottom: -8px; left: -8px; width: 24px; height: 24px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✕</div>
+              </div>
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">Low quality</p>
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <div style="background: #fff; border: 2px solid #3b82f6; border-radius: 8px; padding: 8px; position: relative;">
+                <div style="width: 100%; aspect-ratio: 3/4; background: #d1d5db; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                  <svg width="60" height="80" viewBox="0 0 60 80" fill="none">
+                    <ellipse cx="30" cy="22" rx="14" ry="16" fill="#4b5563"/>
+                    <path d="M10 75 Q30 55 50 75" fill="#f3f4f6" stroke="#9ca3af"/>
+                    <circle cx="24" cy="20" r="2" fill="#374151"/>
+                    <circle cx="36" cy="20" r="2" fill="#374151"/>
+                    <path d="M26 28 Q30 31 34 28" stroke="#374151" stroke-width="1.5" fill="none"/>
+                  </svg>
+                </div>
+                <div style="position: absolute; bottom: -8px; left: -8px; width: 24px; height: 24px; background: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✓</div>
+              </div>
+              <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">Good!</p>
+            </div>
+          </div>
+          <p style="text-align: center; font-size: 0.9rem; color: var(--text); margin: 0;">
+            Take a selfie with your phone in good lighting and high quality
+          </p>
         </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoFile').click()">
@@ -553,14 +613,26 @@
           <div class="file-name" id="fileName" style="display: none;"></div>
         </div>
         
-        <button class="btn btn-primary" style="margin-top: 20px;" id="step1Btn" onclick="submitStep1()" disabled>
-          Next Step
+        <!-- Image Metadata Display -->
+        <div id="imageMetadata" style="display: none; margin-top: 16px; background: var(--step-bg); border-radius: 10px; padding: 16px;">
+          <div style="display: flex; gap: 16px; align-items: flex-start;">
+            <img id="previewImage" src="" alt="Preview" style="width: 80px; height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border);">
+            <div style="flex: 1;">
+              <p id="metaFileName" style="font-size: 0.85rem; color: var(--text); margin: 0 0 8px; word-break: break-all; font-family: 'JetBrains Mono', monospace;"></p>
+              <p id="metaSize" style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 4px;"></p>
+              <p id="metaWeight" style="font-size: 0.85rem; color: var(--text-muted); margin: 0;"></p>
+            </div>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary" style="margin-top: 20px;" id="step2Btn" onclick="submitStep2()" disabled>
+          Upload & Continue
         </button>
       </div>
     </div>
     
-    <!-- Step 2: Payment -->
-    <div class="step-content" id="step2Content">
+    <!-- Step 3: Payment -->
+    <div class="step-content" id="step3Content">
       <div class="card">
         <h2>Complete Payment</h2>
         <p class="subtitle">Please complete the payment using one of the options below.</p>
@@ -597,16 +669,16 @@
           <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh Status</button>
         </div>
         
-        <div id="step3BtnContainer" style="margin-top: 20px; display: none;">
-          <button class="btn btn-primary" id="step3Btn" onclick="goToStep3()">
+        <div id="step4BtnContainer" style="margin-top: 20px; display: none;">
+          <button class="btn btn-primary" id="step4Btn" onclick="goToStep4()">
             ✓ Payment Approved - View Pickup Details
           </button>
         </div>
       </div>
     </div>
     
-    <!-- Step 3: Pickup & Status -->
-    <div class="step-content" id="step3Content">
+    <!-- Step 4: Pickup & Status -->
+    <div class="step-content" id="step4Content">
       <div class="card">
         <h2>Your Order is Ready!</h2>
         <p class="subtitle">Here are your order details and pickup information.</p>
@@ -743,11 +815,13 @@
     function setStep(step) {
       currentStep = step;
       
-      // Update circles
-      for (let i = 1; i <= 3; i++) {
+      // Update circles for 4 steps
+      for (let i = 1; i <= 4; i++) {
         const circle = document.getElementById(`step${i}Circle`);
         const label = document.getElementById(`step${i}Label`);
         const content = document.getElementById(`step${i}Content`);
+        
+        if (!circle || !label || !content) continue;
         
         circle.classList.remove('active', 'completed');
         label.classList.remove('active');
@@ -781,16 +855,16 @@
           currentOrder = data.order;
           
           if (data.order.status === 'pending') {
-            setStep(2);
-            updateStep2UI(data.order);
+            setStep(3);
+            updateStep3UI(data.order);
           } else if (data.order.status === 'paid') {
-            setStep(2);
-            updateStep2UI(data.order);
+            setStep(3);
+            updateStep3UI(data.order);
             document.getElementById('paymentBtn').style.display = 'none';
             document.getElementById('waitingNotice').style.display = 'block';
           } else if (data.order.status === 'approved' || data.order.status === 'completed') {
-            setStep(3);
-            updateStep3UI(data.order);
+            setStep(4);
+            updateStep4UI(data.order);
           }
         }
         
@@ -800,7 +874,7 @@
       }
     }
 
-    function updateStep2UI(order) {
+    function updateStep3UI(order) {
       document.getElementById('orderStatus').textContent = order.status.toUpperCase();
       document.getElementById('orderStatus').className = 'status-badge ' + order.status;
       
@@ -809,11 +883,11 @@
       if (order.status === 'approved') {
         document.getElementById('paymentBtn').style.display = 'none';
         document.getElementById('waitingNotice').style.display = 'none';
-        document.getElementById('step3BtnContainer').style.display = 'block';
+        document.getElementById('step4BtnContainer').style.display = 'block';
       }
     }
 
-    function updateStep3UI(order) {
+    function updateStep4UI(order) {
       // Only show the photos link if admin has set it (after uploading edited photos)
       if (order.dropbox_link) {
         document.getElementById('finalFolderP').style.display = 'block';
@@ -845,7 +919,24 @@
         document.getElementById('fileName').textContent = file.name + ' (will be compressed)';
         document.getElementById('fileName').style.display = 'block';
         document.getElementById('uploadArea').classList.add('has-file');
-        validateStep1();
+        
+        // Show image metadata
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            // Display preview and metadata
+            document.getElementById('previewImage').src = event.target.result;
+            document.getElementById('metaFileName').textContent = file.name;
+            document.getElementById('metaSize').textContent = `Size: ${img.width}x${img.height}px`;
+            document.getElementById('metaWeight').textContent = `Weight: ${(file.size / (1024 * 1024)).toFixed(2)}mb`;
+            document.getElementById('imageMetadata').style.display = 'block';
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+        
+        validateStep2();
       }
     }
     
@@ -889,12 +980,32 @@
       const zipCode = document.getElementById('zipCode').value.trim();
       const storeType = document.querySelector('input[name="storeType"]:checked');
       const pickupLocation = document.getElementById('pickupLocation').value.trim();
-      const file = document.getElementById('photoFile').files[0];
       
-      let valid = file && country && phone && zipCode && storeType && pickupLocation;
+      let valid = country && phone && zipCode && storeType && pickupLocation;
       if (country === 'Other' && !otherCountry.trim()) valid = false;
       
       document.getElementById('step1Btn').disabled = !valid;
+    }
+    
+    function validateStep2() {
+      const file = document.getElementById('photoFile').files[0];
+      document.getElementById('step2Btn').disabled = !file;
+    }
+    
+    function goToStep2() {
+      // Store user info in session for later use
+      sessionStorage.setItem('userInfo', JSON.stringify({
+        country: document.getElementById('country').value === 'Other' 
+          ? document.getElementById('otherCountry').value.trim() 
+          : document.getElementById('country').value,
+        phone: document.getElementById('phone').value.trim(),
+        zipCode: document.getElementById('zipCode').value.trim(),
+        storeType: document.querySelector('input[name="storeType"]:checked').value,
+        pickupLocation: document.getElementById('pickupLocation').value.trim()
+      }));
+      
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     // Store current search for "Open Full Map" button
@@ -962,19 +1073,16 @@
       }
     }
 
-    async function submitStep1() {
-      const btn = document.getElementById('step1Btn');
+    async function submitStep2() {
+      const btn = document.getElementById('step2Btn');
       const file = document.getElementById('photoFile').files[0];
-      const country = document.getElementById('country').value;
-      const otherCountry = document.getElementById('otherCountry').value;
-      const phone = document.getElementById('phone').value.trim();
-      const zipCode = document.getElementById('zipCode').value.trim();
-      const storeType = document.querySelector('input[name="storeType"]:checked');
-      const pickupLocation = document.getElementById('pickupLocation').value.trim();
       
-      const finalCountry = country === 'Other' ? otherCountry.trim() : country;
+      // Get user info from sessionStorage
+      const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
+      const { country, phone, zipCode, storeType, pickupLocation } = userInfo;
+      
       // Combine zip code, store type, and pickup location for address field
-      const address = `${storeType.value} - ${pickupLocation} (ZIP: ${zipCode})`;
+      const address = `${storeType} - ${pickupLocation} (ZIP: ${zipCode})`;
       
       btn.disabled = true;
       btn.textContent = 'Compressing...';
@@ -993,7 +1101,7 @@
             token: getToken(),
             fileName: file.name.replace(/\.[^/.]+$/, '') + '.jpg', // Change extension to jpg
             fileData: compressedData,
-            country: finalCountry,
+            country: country,
             phone: phone,
             address: address
           })
@@ -1003,8 +1111,8 @@
         if (data.success) {
           currentOrder = data.order;
           showMessage('Photo uploaded successfully!', 'success');
-          setStep(2);
-          updateStep2UI(data.order);
+          setStep(3);
+          updateStep3UI(data.order);
         } else {
           showMessage(data.message || 'Upload failed.', 'error');
         }
@@ -1014,10 +1122,10 @@
       }
       
       btn.disabled = false;
-      btn.textContent = 'Next Step';
+      btn.textContent = 'Upload & Continue';
     }
 
-    // Step 2: Payment
+    // Step 3: Payment
     async function submitPayment() {
       const btn = document.getElementById('paymentBtn');
       btn.disabled = true;
@@ -1076,9 +1184,9 @@
       }
     }
 
-    function goToStep3() {
-      setStep(3);
-      updateStep3UI(currentOrder);
+    function goToStep4() {
+      setStep(4);
+      updateStep4UI(currentOrder);
       loadHistory();
     }
 
@@ -1119,9 +1227,10 @@
 
     function startNewOrder() {
       currentOrder = null;
+      sessionStorage.removeItem('userInfo');
       setStep(1);
       
-      // Reset form
+      // Reset step 1 form
       document.getElementById('country').value = '';
       document.getElementById('otherCountry').value = '';
       document.getElementById('phone').value = '';
@@ -1129,20 +1238,24 @@
       document.getElementById('pickupLocation').value = '';
       const storeRadios = document.querySelectorAll('input[name="storeType"]');
       storeRadios.forEach(radio => radio.checked = false);
-      document.getElementById('photoFile').value = '';
-      document.getElementById('fileName').style.display = 'none';
-      document.getElementById('uploadArea').classList.remove('has-file');
       document.getElementById('step1Btn').disabled = true;
       document.getElementById('otherCountryGroup').style.display = 'none';
       document.getElementById('mapContainer').style.display = 'none';
       document.getElementById('storeMap').src = '';
       
-      // Reset step 2
+      // Reset step 2 (photo upload)
+      document.getElementById('photoFile').value = '';
+      document.getElementById('fileName').style.display = 'none';
+      document.getElementById('uploadArea').classList.remove('has-file');
+      document.getElementById('imageMetadata').style.display = 'none';
+      document.getElementById('step2Btn').disabled = true;
+      
+      // Reset step 3 (payment)
       document.getElementById('paymentBtn').style.display = 'block';
       document.getElementById('paymentBtn').disabled = false;
       document.getElementById('paymentBtn').textContent = "I've Paid - Notify Admin";
       document.getElementById('waitingNotice').style.display = 'none';
-      document.getElementById('step3BtnContainer').style.display = 'none';
+      document.getElementById('step4BtnContainer').style.display = 'none';
     }
 
     function handleLogout() {
