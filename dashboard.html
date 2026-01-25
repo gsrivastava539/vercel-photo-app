@@ -802,6 +802,8 @@
     const API_BASE = '';
     let currentOrder = null;
     let currentStep = 1;
+    let photoAlreadyUploaded = false; // Track if photo was already uploaded for current order
+    let newFileSelected = false; // Track if user selected a new file
     
     // Photo Guidelines Modal
     function showPhotoGuidelines() {
@@ -886,6 +888,7 @@
         
         if (data.success && data.order) {
           currentOrder = data.order;
+          photoAlreadyUploaded = true; // Photo was already uploaded for this order
           
           if (data.order.status === 'pending') {
             setStep(3);
@@ -949,9 +952,17 @@
       const file = e.target.files[0];
       if (file) {
         if (file.size > 10 * 1024 * 1024) { showMessage('File too large. Max 10MB.', 'error'); return; }
+        
+        newFileSelected = true; // Mark that user selected a new file
+        
         document.getElementById('fileName').textContent = file.name + ' (will be compressed)';
         document.getElementById('fileName').style.display = 'block';
         document.getElementById('uploadArea').classList.add('has-file');
+        
+        // Update button text if photo was already uploaded
+        if (photoAlreadyUploaded) {
+          document.getElementById('step2Btn').textContent = 'Upload New Photo & Continue';
+        }
         
         // Show image metadata
         const reader = new FileReader();
@@ -1022,7 +1033,8 @@
     
     function validateStep2() {
       const file = document.getElementById('photoFile').files[0];
-      document.getElementById('step2Btn').disabled = !file;
+      // Enable button if: new file selected OR photo already uploaded for current order
+      document.getElementById('step2Btn').disabled = !(file || photoAlreadyUploaded);
     }
     
     function goToStep1() {
@@ -1043,6 +1055,19 @@
       }));
       
       setStep(2);
+      
+      // Update Step 2 UI based on whether photo was already uploaded
+      if (photoAlreadyUploaded && !newFileSelected) {
+        document.getElementById('step2Btn').disabled = false;
+        document.getElementById('step2Btn').textContent = 'Continue';
+        document.getElementById('uploadArea').innerHTML = `
+          <p style="color: var(--success);">✓ Photo already uploaded</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Click below to select a different photo, or click Continue</p>
+          <input type="file" id="photoFile" accept="image/*" onchange="handleFileSelect(event)">
+        `;
+        document.getElementById('uploadArea').classList.add('has-file');
+      }
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
@@ -1123,6 +1148,22 @@
       const btn = document.getElementById('step2Btn');
       const file = document.getElementById('photoFile').files[0];
       
+      // If photo already uploaded and no new file selected, just go to Step 3
+      if (photoAlreadyUploaded && !newFileSelected) {
+        setStep(3);
+        if (currentOrder) {
+          updateStep3UI(currentOrder);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      
+      // If no file selected and no previous upload, show error
+      if (!file) {
+        showMessage('Please select a photo to upload.', 'error');
+        return;
+      }
+      
       // Get user info from sessionStorage
       const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
       const { country, phone, zipCode, storeType, pickupLocation } = userInfo;
@@ -1156,6 +1197,8 @@
         
         if (data.success) {
           currentOrder = data.order;
+          photoAlreadyUploaded = true; // Mark photo as uploaded
+          newFileSelected = false; // Reset new file flag
           showMessage('Photo uploaded successfully!', 'success');
           setStep(3);
           updateStep3UI(data.order);
@@ -1168,7 +1211,7 @@
       }
       
       btn.disabled = false;
-      btn.textContent = 'Upload & Continue';
+      btn.textContent = photoAlreadyUploaded ? 'Continue' : 'Upload & Continue';
     }
 
     // Step 3: Payment
@@ -1273,6 +1316,8 @@
 
     function startNewOrder() {
       currentOrder = null;
+      photoAlreadyUploaded = false; // Reset upload tracking
+      newFileSelected = false; // Reset file selection tracking
       sessionStorage.removeItem('userInfo');
       setStep(1);
       
@@ -1289,12 +1334,17 @@
       document.getElementById('mapContainer').style.display = 'none';
       document.getElementById('storeMap').src = '';
       
-      // Reset step 2 (photo upload)
-      document.getElementById('photoFile').value = '';
-      document.getElementById('fileName').style.display = 'none';
+      // Reset step 2 (photo upload) - restore original upload area HTML
+      document.getElementById('uploadArea').innerHTML = `
+        <p>Click to upload your photo</p>
+        <p style="font-size: 0.85rem;">Supported: JPG, PNG (Max 5MB)</p>
+        <input type="file" id="photoFile" accept="image/*" onchange="handleFileSelect(event)">
+        <div class="file-name" id="fileName" style="display: none;"></div>
+      `;
       document.getElementById('uploadArea').classList.remove('has-file');
       document.getElementById('imageMetadata').style.display = 'none';
       document.getElementById('step2Btn').disabled = true;
+      document.getElementById('step2Btn').textContent = 'Upload & Continue';
       
       // Reset step 3 (payment)
       document.getElementById('paymentBtn').style.display = 'block';
