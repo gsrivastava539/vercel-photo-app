@@ -65,9 +65,8 @@
       gap: 12px;
       margin-top: 20px;
     }
-    .step-nav .btn-back {
-      flex: 0 0 auto;
-      padding: 12px 20px;
+    .btn-back {
+      padding: 14px 20px;
       background: var(--step-bg);
       border: 1px solid var(--border);
       color: var(--text);
@@ -76,9 +75,15 @@
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
+      min-height: 48px; /* Mobile-friendly touch target */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-    .step-nav .btn-back:hover {
+    .btn-back:hover, .btn-back:active {
       background: var(--border);
+    }
+    .step-nav .btn-back {
+      flex: 0 0 auto;
     }
     .step-nav .btn-next {
       flex: 1;
@@ -691,7 +696,7 @@
           <p>⏳ Payment verification in progress...</p>
           <p style="color: var(--text-muted); font-size: 0.85rem;">Check your email for approval notification, then refresh this page.</p>
           <button class="refresh-btn" onclick="refreshStatus()">🔄 Refresh Status</button>
-          <button class="btn-back" style="margin-top: 12px; width: 100%;" onclick="goToStep2()">← Back to Upload</button>
+          <button type="button" class="btn-back" style="margin-top: 12px; width: 100%; display: block;" onclick="goToStep2()">← Back to Upload</button>
         </div>
         
         <div id="step4BtnContainer" style="margin-top: 20px; display: none;">
