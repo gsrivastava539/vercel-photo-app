@@ -890,6 +890,9 @@
           currentOrder = data.order;
           photoAlreadyUploaded = true; // Photo was already uploaded for this order
           
+          // Restore user info from database to sessionStorage (for back navigation after browser close)
+          restoreUserInfoFromOrder(data.order);
+          
           if (data.order.status === 'pending') {
             setStep(3);
             updateStep3UI(data.order);
@@ -908,6 +911,81 @@
       } catch (err) {
         console.error('Failed to check order:', err);
       }
+    }
+    
+    // Restore user info from order data (used when returning after browser close)
+    function restoreUserInfoFromOrder(order) {
+      if (!order) return;
+      
+      // Parse address field which contains: "StoreType - Location (ZIP: 12345)"
+      let storeType = 'CVS';
+      let pickupLocation = '';
+      let zipCode = '';
+      
+      if (order.address) {
+        const addressMatch = order.address.match(/^(CVS|Walgreens)\s*-\s*(.+?)\s*\(ZIP:\s*(\d+)\)$/i);
+        if (addressMatch) {
+          storeType = addressMatch[1];
+          pickupLocation = addressMatch[2].trim();
+          zipCode = addressMatch[3];
+        } else {
+          // Fallback: just use the address as pickup location
+          pickupLocation = order.address;
+        }
+      }
+      
+      const userInfo = {
+        country: order.country || 'US',
+        phone: order.phone || '',
+        zipCode: zipCode,
+        storeType: storeType,
+        pickupLocation: pickupLocation
+      };
+      
+      sessionStorage.setItem('userInfo', JSON.stringify(userInfo));
+      
+      // Also populate the Step 1 form fields
+      populateStep1FromUserInfo(userInfo);
+    }
+    
+    // Populate Step 1 form with user info
+    function populateStep1FromUserInfo(userInfo) {
+      if (!userInfo) return;
+      
+      // Set country
+      const countrySelect = document.getElementById('country');
+      if (['US', 'India'].includes(userInfo.country)) {
+        countrySelect.value = userInfo.country;
+        document.getElementById('otherCountryGroup').style.display = 'none';
+      } else if (userInfo.country) {
+        countrySelect.value = 'Other';
+        document.getElementById('otherCountry').value = userInfo.country;
+        document.getElementById('otherCountryGroup').style.display = 'block';
+      }
+      
+      // Set phone
+      if (userInfo.phone) {
+        document.getElementById('phone').value = userInfo.phone;
+      }
+      
+      // Set ZIP code
+      if (userInfo.zipCode) {
+        document.getElementById('zipCode').value = userInfo.zipCode;
+      }
+      
+      // Set store type radio
+      if (userInfo.storeType) {
+        const storeRadio = document.querySelector(`input[name="storeType"][value="${userInfo.storeType}"]`);
+        if (storeRadio) storeRadio.checked = true;
+      }
+      
+      // Set pickup location
+      if (userInfo.pickupLocation) {
+        document.getElementById('pickupLocation').value = userInfo.pickupLocation;
+      }
+      
+      // Validate to enable/disable button
+      validateStep1();
     }
 
     function updateStep3UI(order) {
@@ -1039,20 +1117,33 @@
     
     function goToStep1() {
       setStep(1);
+      
+      // Restore form fields from sessionStorage if available
+      const userInfo = JSON.parse(sessionStorage.getItem('userInfo') || '{}');
+      if (userInfo && Object.keys(userInfo).length > 0) {
+        populateStep1FromUserInfo(userInfo);
+      }
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
-    function goToStep2() {
-      // Store user info in session for later use
-      sessionStorage.setItem('userInfo', JSON.stringify({
-        country: document.getElementById('country').value === 'Other' 
-          ? document.getElementById('otherCountry').value.trim() 
-          : document.getElementById('country').value,
-        phone: document.getElementById('phone').value.trim(),
-        zipCode: document.getElementById('zipCode').value.trim(),
-        storeType: document.querySelector('input[name="storeType"]:checked').value,
-        pickupLocation: document.getElementById('pickupLocation').value.trim()
-      }));
+    function goToStep2(fromStep1 = false) {
+      // Only save user info if coming from Step 1 (form has data)
+      // When coming back from Step 3, sessionStorage should already have the data
+      const storeTypeRadio = document.querySelector('input[name="storeType"]:checked');
+      const hasFormData = document.getElementById('country').value && storeTypeRadio;
+      
+      if (hasFormData) {
+        sessionStorage.setItem('userInfo', JSON.stringify({
+          country: document.getElementById('country').value === 'Other' 
+            ? document.getElementById('otherCountry').value.trim() 
+            : document.getElementById('country').value,
+          phone: document.getElementById('phone').value.trim(),
+          zipCode: document.getElementById('zipCode').value.trim(),
+          storeType: storeTypeRadio.value,
+          pickupLocation: document.getElementById('pickupLocation').value.trim()
+        }));
+      }
       
       setStep(2);
       
